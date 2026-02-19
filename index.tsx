@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import LandingQuiz from './src/components/LandingQuiz';
+import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 import './index.css';
 
@@ -15,6 +15,6 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <LandingQuiz />
+    <App />
   </React.StrictMode>
 );

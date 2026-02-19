@@ -20,7 +20,11 @@ interface QuizAnswers {
   resultado?: string;
 }
 
-export default function LandingQuiz() {
+interface LandingQuizProps {
+  onStart?: () => void;
+}
+
+export default function LandingQuiz({ onStart }: LandingQuizProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [finished, setFinished] = useState(false);
@@ -102,7 +106,10 @@ export default function LandingQuiz() {
                 )}
 
                 {!loading && (
-                  <button className="w-full py-4 text-lg bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl mt-4 transition-colors">
+                  <button
+                    onClick={onStart}
+                    className="w-full py-4 text-lg bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl mt-4 transition-colors"
+                  >
                     Quero começar meu tratamento agora
                   </button>
                 )}

@@ -10,6 +10,7 @@ import ChatView from './views/ChatView';
 import AuthView from './views/AuthView';
 import { supabase } from './services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import LandingQuiz from './src/components/LandingQuiz';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [lastError, setLastError] = useState<string | null>(null);
   const [showIOSInstallPrompt, setShowIOSInstallPrompt] = useState<boolean>(false);
+  const [showLanding, setShowLanding] = useState<boolean>(true);
 
   // Detect iOS and Standalone mode
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !((window as any).MSStream);
@@ -365,6 +367,10 @@ const App: React.FC = () => {
         <div className="w-12 h-12 border-4 border-[#2d4a22] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  if (showLanding) {
+    return <LandingQuiz onStart={() => setShowLanding(false)} />;
   }
 
   if (!session) {
