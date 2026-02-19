@@ -7,7 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('ERRO: Variáveis de ambiente do Supabase não encontradas! Verifique o arquivo .env.local');
 }
 
-console.log('Inicializando cliente Supabase...');
+// Inicializando cliente Supabase...
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
