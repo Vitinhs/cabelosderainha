@@ -145,21 +145,53 @@ const App: React.FC = () => {
 
   const handleToggleNotifications = async () => {
     if (!notificationsEnabled) {
-      if (!("Notification" in window)) {
-        alert("Este navegador não suporta notificações.");
+      // Verifica suporte a notificações de forma mais abrangente
+      const hasNotificationSupport = "Notification" in window;
+      const isSecureContext = window.isSecureContext;
+
+      if (!hasNotificationSupport) {
+        alert("Este navegador não suporta notificações de sistema. Tente instalar o App (PWA) e usar um navegador moderno (Chrome, Safari ou Edge).");
         return;
       }
 
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        setNotificationsEnabled(true);
-        localStorage.setItem('capillaire_notifs', 'true');
-        new Notification("Cabelos de Rainha", {
-          body: "Lembretes diários ativados com sucesso! ✨",
-          icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
-        });
-      } else {
-        alert("Você precisa permitir as notificações nas configurações do navegador.");
+      if (!isSecureContext) {
+        alert("Notificações exigem uma conexão segura (HTTPS). No seu ambiente local, use localhost:3000.");
+        return;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          setNotificationsEnabled(true);
+          localStorage.setItem('capillaire_notifs', 'true');
+
+          // Tenta enviar via Service Worker se estiver disponível (melhor para mobile)
+          if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            if (registration) {
+              registration.showNotification("Cabelos de Rainha", {
+                body: "Lembretes diários ativados com sucesso! ✨",
+                icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
+                badge: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
+              });
+            } else {
+              new Notification("Cabelos de Rainha", {
+                body: "Lembretes diários ativados com sucesso! ✨",
+                icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
+              });
+            }
+          } else {
+            new Notification("Cabelos de Rainha", {
+              body: "Lembretes diários ativados com sucesso! ✨",
+              icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
+            });
+          }
+        } else {
+          alert("Você precisa permitir as notificações nas configurações do navegador para receber lembretes.");
+        }
+      } catch (err) {
+        console.error("Erro ao solicitar permissão:", err);
+        alert("Houve um erro ao ativar as notificações. Certifique-se de estar em um ambiente seguro (HTTPS).");
       }
     } else {
       setNotificationsEnabled(false);
