@@ -169,8 +169,19 @@ const App: React.FC = () => {
       };
 
       console.log("Calling generateHairPlan with diagnosis:", diagnosis);
-      const plan = await generateHairPlan(diagnosis);
-      console.log("Hair plan generated successfully:", plan);
+
+      // Timeout de 30 segundos para a IA
+      const planPromise = generateHairPlan(diagnosis);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 30000)
+      );
+
+      const plan = await Promise.race([planPromise, timeoutPromise]) as HairPlan;
+      console.log("Hair plan received:", plan);
+
+      if (!plan || !plan.tasks) {
+        throw new Error("O plano veio vazio. Tente refazer o quiz.");
+      }
 
       setHairPlan(plan);
 
