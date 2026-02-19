@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import LandingQuiz from './src/components/LandingQuiz';
 import { registerSW } from 'virtual:pwa-register';
+import './index.css';
 
 // Registra o Service Worker para suporte PWA
 registerSW({ immediate: true });
@@ -14,6 +15,6 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <LandingQuiz />
   </React.StrictMode>
 );
