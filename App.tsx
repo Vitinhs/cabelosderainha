@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
-import { HairPlan, HairDiagnosis, QuizAnswers } from './types';
+import { HairPlan, HairDiagnosis, QuizAnswers, HairType, ScalpType, MainGoal } from './types';
 import { generateHairPlan } from './services/geminiService';
 import HomeView from './views/HomeView';
 import ScheduleView from './views/ScheduleView';
@@ -88,12 +88,14 @@ const App: React.FC = () => {
   };
 
   const handleQuizFinish = async (answers: QuizAnswers, lead: any) => {
+    console.log("Quiz finish received in App.tsx. Answers:", answers);
     setDiagnosisData({ answers, lead });
     setPhase('result');
   };
 
   const handleGeneratePlan = async () => {
     if (!diagnosisData) return;
+    console.log("Starting plan generation...");
     setIsLoading(true);
     setLastError(null);
 
@@ -113,9 +115,12 @@ const App: React.FC = () => {
         budgetLevel: 'Baixo (Caseiro)'
       };
 
+      console.log("Calling generateHairPlan with diagnosis:", diagnosis);
       const plan = await generateHairPlan(diagnosis);
+      console.log("Hair plan generated successfully:", plan);
       setHairPlan(plan);
     } catch (error: any) {
+      console.error("Error in handleGeneratePlan:", error);
       setLastError(error.message);
     } finally {
       setIsLoading(false);

@@ -24,12 +24,14 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
   const [leadInfo, setLeadInfo] = useState({ nome: "", email: "" });
 
   const handleAnswer = (option: string) => {
+    console.log(`Quiz Step ${step}: Answered ${option}`);
     const newAnswers: QuizAnswers = { ...answers, [questions[step].id]: option };
     setAnswers(newAnswers);
 
     if (step + 1 < questions.length) {
       setStep(step + 1);
     } else {
+      console.log("Quiz reached end. Showing lead form.");
       setShowLeadForm(true);
     }
   };
@@ -38,15 +40,22 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
     e.preventDefault();
     if (!leadInfo.nome || !leadInfo.email) return;
 
+    console.log("Submitting lead...", leadInfo);
     setLoading(true);
     try {
       // salvar respostas + lead no Supabase
-      await supabase.from('clientes').insert([{
+      const { error } = await supabase.from('clientes').insert([{
         nome: leadInfo.nome,
         email: leadInfo.email,
         respostas_quiz: answers,
         cronograma_entregue: false
       }]);
+
+      if (error) {
+        console.warn("Supabase insert error (likely RLS), proceeding anyway:", error);
+      } else {
+        console.log("Lead saved successfully.");
+      }
 
       onFinish(answers, leadInfo);
     } catch (error) {
