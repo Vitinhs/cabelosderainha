@@ -48,6 +48,29 @@ export interface HairPlan {
   summary: string;
 }
 
+export interface Cliente {
+  id?: string;
+  nome: string;
+  email: string;
+  telefone?: string;
+  respostas_quiz: any;
+  cronograma?: any;
+  cronograma_entregue: boolean;
+  created_at?: string;
+}
+
+export interface QuizAnswers {
+  nome?: string;
+  email?: string;
+  telefone?: string;
+  tipo?: string;
+  queda?: string;
+  quimica?: string;
+  problema?: string;
+  tempo?: string;
+  resultado?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'model';
   content: string;
