@@ -20,6 +20,20 @@ const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [showIOSInstallPrompt, setShowIOSInstallPrompt] = useState<boolean>(false);
+
+  // Detect iOS and Standalone mode
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !((window as any).MSStream);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+
+  useEffect(() => {
+    if (isIOS && !isStandalone) {
+      const hasSeenPrompt = localStorage.getItem('ios_prompt_seen') === 'true';
+      if (!hasSeenPrompt) {
+        setShowIOSInstallPrompt(true);
+      }
+    }
+  }, [isIOS, isStandalone]);
 
   // Load session and plan from Supabase on mount
   useEffect(() => {
@@ -150,7 +164,11 @@ const App: React.FC = () => {
       const isSecureContext = window.isSecureContext;
 
       if (!hasNotificationSupport) {
-        alert("Este navegador não suporta notificações de sistema. Tente instalar o App (PWA) e usar um navegador moderno (Chrome, Safari ou Edge).");
+        if (isIOS && !isStandalone) {
+          alert("No iPhone, as notificações só funcionam após você instalar o App. Clique no ícone de 'Compartilhar' e depois 'Adicionar à Tela de Início'.");
+        } else {
+          alert("Este navegador não suporta notificações de sistema. Tente instalar o App (PWA) e usar um navegador moderno.");
+        }
         return;
       }
 
@@ -356,6 +374,42 @@ const App: React.FC = () => {
   return (
     <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
+
+      {/* iOS Install Prompt Overlay */}
+      {showIOSInstallPrompt && (
+        <div className="fixed bottom-24 left-4 right-4 bg-white rounded-3xl p-6 shadow-2xl border border-emerald-100 z-[100] animate-in slide-in-from-bottom duration-500">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-[#2d4a22] rounded-xl flex items-center justify-center text-white text-xl">👑</div>
+              <div>
+                <h4 className="font-bold text-gray-800">Instalar Cabelos de Rainha</h4>
+                <p className="text-[10px] text-gray-400">Para receber lembretes no iPhone</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setShowIOSInstallPrompt(false);
+                localStorage.setItem('ios_prompt_seen', 'true');
+              }}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3 text-sm text-gray-600">
+              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs">1</div>
+              <p>Clique no ícone de <strong>Compartilhar</strong> (quadrado com seta)</p>
+            </div>
+            <div className="flex items-center space-x-3 text-sm text-gray-600">
+              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs">2</div>
+              <p>Role para baixo e toque em <strong>'Adicionar à Tela de Início'</strong></p>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
