@@ -1,25 +1,24 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../services/supabaseClient";
 import { QuizAnswers } from "../../types";
 
 const questions = [
   { id: "tipo", title: "Qual é o seu tipo de cabelo?", options: ["Liso", "Ondulado", "Cacheado", "Crespo"] },
-  { id: "queda", title: "Seu cabelo está com queda excessiva?", options: ["Sim, muita queda", "Um pouco", "Quase nada", "Não tenho queda"] },
-  { id: "quimica", title: "Seu cabelo tem química?", options: ["Tintura", "Progressiva", "Descoloração", "Nenhuma química"] },
-  { id: "problema", title: "Qual é o principal problema hoje?", options: ["Queda", "Frizz", "Ressecamento", "Quebra", "Crescimento lento"] },
+  { id: "queda", title: "Seu cabelo está com queda excessiva?", options: ["Sim, muita", "Um pouco", "Não tenho queda"] },
+  { id: "quimica", title: "Seu cabelo tem química?", options: ["Tintura", "Progressiva", "Descoloração", "Nenhuma"] },
+  { id: "problema", title: "Qual é o seu desafio principal hoje?", options: ["Queda", "Frizz", "Ressecamento", "Quebra", "Crescimento lento"] },
   { id: "tempo", title: "Há quanto tempo você sente esse problema?", options: ["Menos de 1 mês", "1 a 3 meses", "3 a 6 meses", "Mais de 6 meses"] },
-  { id: "resultado", title: "Qual resultado você mais deseja?", options: ["Parar a queda", "Crescer mais rápido", "Ficar mais hidratado", "Diminuir frizz", "Recuperar danos"] },
+  { id: "resultado", title: "Qual resultado você mais deseja?", options: ["Parar a queda", "Crescer mais rápido", "Hidratação", "Diminuir frizz", "Recuperar danos"] },
 ];
 
 interface LandingQuizProps {
-  onStart?: () => void;
+  onFinish: (answers: QuizAnswers, lead: { nome: string; email: string }) => void;
 }
 
-export default function LandingQuiz({ onStart }: LandingQuizProps) {
+export default function LandingQuiz({ onFinish }: LandingQuizProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>({});
-  const [finished, setFinished] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadInfo, setLeadInfo] = useState({ nome: "", email: "" });
@@ -35,35 +34,25 @@ export default function LandingQuiz({ onStart }: LandingQuizProps) {
     }
   };
 
-  const gerarCronogramaSimples = (respostas: QuizAnswers) => {
-    const plano = [];
-    if (respostas.problema === "Queda" || respostas.queda === "Sim, muita queda") plano.push("Fortalecimento semanal");
-    if (respostas.problema === "Ressecamento" || respostas.resultado === "Ficar mais hidratado") plano.push("Hidratação profunda");
-    if (respostas.problema === "Frizz") plano.push("Nutrição anti-frizz");
-    if (respostas.quimica !== "Nenhuma química") plano.push("Reconstrução quinzenal");
-    return plano.length > 0 ? plano : ["Cronograma equilibrado HNR"];
-  };
-
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadInfo.nome || !leadInfo.email) return;
 
     setLoading(true);
-    const cronograma = gerarCronogramaSimples(answers);
-
     try {
       // salvar respostas + lead no Supabase
       await supabase.from('clientes').insert([{
         nome: leadInfo.nome,
         email: leadInfo.email,
         respostas_quiz: answers,
-        cronograma: cronograma,
         cronograma_entregue: false
       }]);
-      setFinished(true);
-      setShowLeadForm(false);
+
+      onFinish(answers, leadInfo);
     } catch (error) {
       console.error("Erro ao salvar lead:", error);
+      // Even if it fails, let's proceed to result to not block user
+      onFinish(answers, leadInfo);
     } finally {
       setLoading(false);
     }
@@ -71,103 +60,105 @@ export default function LandingQuiz({ onStart }: LandingQuizProps) {
 
   const progress = Math.round((step / questions.length) * 100);
 
-  const getResultText = () => {
-    if (answers.queda === "Sim, muita queda") return "Seu cabelo precisa de um cronograma focado em fortalecimento e redução da queda.";
-    if (answers.problema === "Ressecamento") return "Seu cabelo precisa de hidratação profunda e nutrição contínua.";
-    return "Seu cabelo precisa de um cronograma equilibrado para crescimento saudável.";
-  };
-
   return (
-    <div className="min-h-screen bg-pink-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#fcfbf7] flex items-center justify-center p-4">
       <div className="max-w-xl w-full">
-        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
-          <div className="p-6 space-y-6">
-            {!showLeadForm && !finished ? (
-              <motion.div key={step} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-                  <div
-                    className="bg-pink-500 h-2.5 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-
-                <h1 className="text-2xl font-bold text-center">
-                  {questions[step].title}
-                </h1>
-
-                <div className="grid gap-3 mt-4">
-                  {questions[step].options.map((option) => (
-                    <button
-                      key={option}
-                      className="w-full text-base py-4 px-6 border border-pink-200 rounded-xl hover:bg-pink-50 transition-colors text-gray-700 font-medium"
-                      onClick={() => handleAnswer(option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            ) : showLeadForm ? (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold">Estamos quase lá! 👑</h2>
-                  <p className="text-gray-600 mt-2">Onde devemos entregar seu cronograma personalizado?</p>
-                </div>
-
-                <form onSubmit={handleLeadSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seu Nome</label>
-                    <input
-                      required
-                      type="text"
-                      className="w-full p-4 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
-                      placeholder="Como podemos te chamar?"
-                      value={leadInfo.nome}
-                      onChange={e => setLeadInfo({ ...leadInfo, nome: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seu Melhor E-mail</label>
-                    <input
-                      required
-                      type="email"
-                      className="w-full p-4 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
-                      placeholder="exemplo@email.com"
-                      value={leadInfo.email}
-                      onChange={e => setLeadInfo({ ...leadInfo, email: e.target.value })}
-                    />
-                  </div>
-                  <button
-                    disabled={loading}
-                    type="submit"
-                    className="w-full py-4 text-lg bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-pink-200"
-                  >
-                    {loading ? "Processando..." : "Gerar Meu Cronograma Agora"}
-                  </button>
-                </form>
-              </motion.div>
-            ) : (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="text-center space-y-6">
-                <h2 className="text-3xl font-bold">Resultado do seu diagnóstico</h2>
-                <p className="text-lg">{getResultText()}</p>
-
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="bg-white p-4 rounded-xl shadow">
-                  <p className="font-semibold">Plano Inicial Gerado:</p>
-                  <ul className="text-left list-disc list-inside mt-2 space-y-1">
-                    {gerarCronogramaSimples(answers).map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                </motion.div>
-
-                <button
-                  onClick={onStart}
-                  className="w-full py-4 text-lg bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl mt-4 transition-colors"
+        <div className="bg-white shadow-2xl rounded-[2.5rem] overflow-hidden border border-emerald-50">
+          <div className="p-8 md:p-12 space-y-8">
+            <AnimatePresence mode="wait">
+              {!showLeadForm ? (
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-8"
                 >
-                  Acessar Aplicativo Completo
-                </button>
-              </motion.div>
-            )}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-emerald-800 uppercase tracking-widest">
+                      <span>Progresso</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="w-full bg-emerald-50 rounded-full h-1.5">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        className="bg-[#2d4a22] h-full rounded-full"
+                      />
+                    </div>
+                  </div>
+
+                  <h2 className="text-3xl font-bold text-[#2d4a22] font-serif italic text-center leading-tight">
+                    {questions[step].title}
+                  </h2>
+
+                  <div className="grid gap-3">
+                    {questions[step].options.map((option) => (
+                      <button
+                        key={option}
+                        className="w-full py-5 px-8 text-left border-2 border-emerald-50 rounded-2xl hover:border-[#2d4a22] hover:bg-emerald-50 transition-all text-gray-700 font-semibold group flex justify-between items-center"
+                        onClick={() => handleAnswer(option)}
+                      >
+                        <span>{option}</span>
+                        <div className="w-6 h-6 rounded-full border-2 border-emerald-200 group-hover:border-[#2d4a22] transition-colors" />
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-8"
+                >
+                  <div className="text-center space-y-2">
+                    <div className="inline-block px-4 py-1 bg-emerald-100 text-[#2d4a22] rounded-full text-[10px] font-bold uppercase tracking-widest">
+                      Quase lá
+                    </div>
+                    <h2 className="text-3xl font-bold text-[#2d4a22] font-serif italic">Para onde enviamos seu cronograma?</h2>
+                    <p className="text-gray-500 text-sm">Seus dados estão seguros e serão usados apenas para a entrega do seu plano personalizado.</p>
+                  </div>
+
+                  <form onSubmit={handleLeadSubmit} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Nome Completo</label>
+                      <input
+                        required
+                        type="text"
+                        className="w-full p-5 bg-gray-50 border-2 border-transparent focus:border-[#2d4a22] focus:bg-white rounded-2xl outline-none transition-all font-semibold"
+                        placeholder="Ex: Maria Souza"
+                        value={leadInfo.nome}
+                        onChange={e => setLeadInfo({ ...leadInfo, nome: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Melhor E-mail</label>
+                      <input
+                        required
+                        type="email"
+                        className="w-full p-5 bg-gray-50 border-2 border-transparent focus:border-[#2d4a22] focus:bg-white rounded-2xl outline-none transition-all font-semibold"
+                        placeholder="Ex: maria@email.com"
+                        value={leadInfo.email}
+                        onChange={e => setLeadInfo({ ...leadInfo, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="pt-4">
+                      <button
+                        disabled={loading}
+                        type="submit"
+                        className="w-full py-5 bg-[#2d4a22] text-white rounded-2xl font-bold text-lg shadow-xl shadow-emerald-900/20 hover:bg-[#1f3317] transition-all disabled:opacity-50"
+                      >
+                        {loading ? "Processando..." : "Gerar Meu Cronograma"}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-center text-gray-400 pt-2">
+                      🔒 Seus dados estão seguros conforme a LGPD.
+                    </p>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

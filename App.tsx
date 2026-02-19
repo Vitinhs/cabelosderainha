@@ -1,232 +1,141 @@
 
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
-import { HairPlan, HairDiagnosis, HairType, ScalpType, MainGoal } from './types';
+import { HairPlan, HairDiagnosis, QuizAnswers } from './types';
 import { generateHairPlan } from './services/geminiService';
 import HomeView from './views/HomeView';
-import DiagnosisForm from './views/DiagnosisForm';
 import ScheduleView from './views/ScheduleView';
 import ChatView from './views/ChatView';
 import AuthView from './views/AuthView';
+import LandingPage from './views/LandingPage';
+import LandingQuiz from './src/components/LandingQuiz';
+import ResultView from './views/ResultView';
+import SubscriptionView from './views/SubscriptionView';
+import DashboardView from './views/DashboardView';
 import { supabase } from './services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
-import LandingQuiz from './src/components/LandingQuiz';
+
+type JourneyPhase = 'landing' | 'quiz' | 'result' | 'subscription' | 'app';
 
 const App: React.FC = () => {
+  const [phase, setPhase] = useState<JourneyPhase>('landing');
   const [activeTab, setActiveTab] = useState<string>('home');
   const [hairPlan, setHairPlan] = useState<HairPlan | null>(null);
-  const [isDiagnosing, setIsDiagnosing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  const [isSubscriber, setIsSubscriber] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [showIOSInstallPrompt, setShowIOSInstallPrompt] = useState<boolean>(false);
-  const [showLanding, setShowLanding] = useState<boolean>(true);
-
-  // Detect iOS and Standalone mode
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !((window as any).MSStream);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+  const [diagnosisData, setDiagnosisData] = useState<{ answers: QuizAnswers; lead: any } | null>(null);
 
   useEffect(() => {
-    if (isIOS && !isStandalone) {
-      const hasSeenPrompt = localStorage.getItem('ios_prompt_seen') === 'true';
-      if (!hasSeenPrompt) {
-        setShowIOSInstallPrompt(true);
-      }
-    }
-  }, [isIOS, isStandalone]);
-
-  // Load session and plan from Supabase on mount
-  useEffect(() => {
-    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
+        setPhase('app');
         loadUserPlan(session.user.id);
+        checkSubscription(session.user.id);
       } else {
         setIsAuthLoading(false);
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Supabase Auth Change:', _event, session?.user?.email);
       setSession(session);
       if (session) {
+        setPhase('app');
         loadUserPlan(session.user.id);
+        checkSubscription(session.user.id);
       } else {
         setHairPlan(null);
+        setIsSubscriber(false);
         setIsAuthLoading(false);
       }
     });
-
-    const savedNotifs = localStorage.getItem('capillaire_notifs') === 'true';
-    setNotificationsEnabled(savedNotifs);
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkSubscription = async (userId: string) => {
+    const { data } = await supabase
+      .from('assinaturas')
+      .select('status')
+      .eq('cliente_id', userId)
+      .eq('status', 'ativa')
+      .maybeSingle();
+
+    setIsSubscriber(!!data);
+  };
+
   const loadUserPlan = async (userId: string) => {
     setIsAuthLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('hair_plans')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .maybeSingle();
 
-      if (error) {
-        console.error("Erro detalhado do Supabase (loadUserPlan):", error);
-        throw error;
-      }
-
       if (data) {
-        console.log("Plano carregado com sucesso:", data.id);
         setHairPlan(data as unknown as HairPlan);
       }
-    } catch (error: any) {
-      console.error("Erro ao carregar plano do Supabase:", error.message || error);
+    } catch (error) {
+      console.error("Erro ao carregar plano:", error);
     } finally {
       setIsAuthLoading(false);
     }
   };
 
-  const savePlanToSupabase = async (plan: HairPlan) => {
-    if (!session?.user.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('hair_plans')
-        .upsert({
-          id: plan.id || undefined,
-          user_id: session.user.id,
-          diagnosis: plan.diagnosis,
-          tasks: plan.tasks,
-          summary: plan.summary,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Erro ao salvar no Supabase:", error);
-    }
+  const handleQuizFinish = async (answers: QuizAnswers, lead: any) => {
+    setDiagnosisData({ answers, lead });
+    setPhase('result');
   };
 
-  // Save plan to Supabase when it changes
-  useEffect(() => {
-    if (hairPlan && session) {
-      savePlanToSupabase(hairPlan);
-    }
-  }, [hairPlan, session]);
-
-  const handleStartDiagnosis = () => {
-    setIsDiagnosing(true);
-  };
-
-  const handleFinishDiagnosis = async (diagnosis: HairDiagnosis) => {
+  const handleGeneratePlan = async () => {
+    if (!diagnosisData) return;
     setIsLoading(true);
     setLastError(null);
-    console.log("Iniciando geração de plano...");
-
-    if (!import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY === 'PLACEHOLDER_API_KEY') {
-      alert("Erro: A chave de API do Gemini não foi configurada corretamente no arquivo .env.local");
-      setIsLoading(false);
-      return;
-    }
 
     try {
+      const answers = diagnosisData.answers;
+      const diagnosis: HairDiagnosis = {
+        hairType: (answers.tipo as any) || HairType.STRAIGHT,
+        scalpType: ScalpType.NORMAL,
+        porosity: 'Média',
+        hasChemicals: answers.quimica !== 'Nenhuma',
+        frequencyOfWash: '3x por semana',
+        mainGoal: (answers.resultado?.includes('queda') ? MainGoal.STRENGTH :
+          answers.resultado?.includes('crescer') ? MainGoal.GROWTH :
+            answers.resultado?.includes('Hidratação') ? MainGoal.HYDRATION :
+              answers.resultado?.includes('danos') ? MainGoal.DAMAGE_REPAIR :
+                MainGoal.HYDRATION),
+        budgetLevel: 'Baixo (Caseiro)'
+      };
+
       const plan = await generateHairPlan(diagnosis);
-      console.log("Plano gerado com sucesso!");
       setHairPlan(plan);
-      setIsDiagnosing(false);
-      setActiveTab('schedule');
     } catch (error: any) {
-      console.error("Erro capturado no App.tsx:", error);
-      const msg = error.message || JSON.stringify(error, null, 2);
-      setLastError(msg);
+      setLastError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleTask = (day: number) => {
-    if (!hairPlan) return;
-    const updatedTasks = hairPlan.tasks.map(t =>
-      t.day === day ? { ...t, completed: !t.completed } : t
-    );
-    setHairPlan({ ...hairPlan, tasks: updatedTasks });
-  };
-
-  const handleToggleNotifications = async () => {
-    if (!notificationsEnabled) {
-      // Verifica suporte a notificações de forma mais abrangente
-      const hasNotificationSupport = "Notification" in window;
-      const isSecureContext = window.isSecureContext;
-
-      if (!hasNotificationSupport) {
-        if (isIOS && !isStandalone) {
-          alert("No iPhone, as notificações só funcionam após você instalar o App. Clique no ícone de 'Compartilhar' e depois 'Adicionar à Tela de Início'.");
-        } else {
-          alert("Este navegador não suporta notificações de sistema. Tente instalar o App (PWA) e usar um navegador moderno.");
-        }
-        return;
-      }
-
-      if (!isSecureContext) {
-        alert("Notificações exigem uma conexão segura (HTTPS). No seu ambiente local, use localhost:3000.");
-        return;
-      }
-
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          setNotificationsEnabled(true);
-          localStorage.setItem('capillaire_notifs', 'true');
-
-          // Tenta enviar via Service Worker se estiver disponível (melhor para mobile)
-          if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.ready;
-            if (registration) {
-              registration.showNotification("Cabelos de Rainha", {
-                body: "Lembretes diários ativados com sucesso! ✨",
-                icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
-                badge: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
-              });
-            } else {
-              new Notification("Cabelos de Rainha", {
-                body: "Lembretes diários ativados com sucesso! ✨",
-                icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
-              });
-            }
-          } else {
-            new Notification("Cabelos de Rainha", {
-              body: "Lembretes diários ativados com sucesso! ✨",
-              icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
-            });
-          }
-        } else {
-          alert("Você precisa permitir as notificações nas configurações do navegador para receber lembretes.");
-        }
-      } catch (err) {
-        console.error("Erro ao solicitar permissão:", err);
-        alert("Houve um erro ao ativar as notificações. Certifique-se de estar em um ambiente seguro (HTTPS).");
-      }
-    } else {
-      setNotificationsEnabled(false);
-      localStorage.setItem('capillaire_notifs', 'false');
+  useEffect(() => {
+    if (phase === 'result' && diagnosisData && !hairPlan && !isLoading) {
+      handleGeneratePlan();
     }
-  };
+  }, [phase, diagnosisData]);
 
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="h-full flex flex-col items-center justify-center space-y-6 text-center">
+        <div className="h-screen bg-[#fcfbf7] flex flex-col items-center justify-center space-y-6 text-center p-6">
           <div className="w-16 h-16 border-4 border-[#2d4a22] border-t-transparent rounded-full animate-spin"></div>
-          <div>
-            <h2 className="text-xl font-bold text-[#2d4a22]">Criando sua jornada...</h2>
-            <p className="text-sm text-gray-500 max-w-xs">Nossa IA está analisando seus dados para criar o melhor cronograma 100% natural.</p>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-[#2d4a22] font-serif italic">Criando seu cronograma...</h2>
+            <p className="text-sm text-gray-500 max-w-xs">Nossa IA está analisando seus fios para construir a melhor rotina 100% natural.</p>
           </div>
         </div>
       );
@@ -234,134 +143,50 @@ const App: React.FC = () => {
 
     if (lastError) {
       return (
-        <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-4">
-          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">Ops! Algo deu errado</h2>
-          <p className="text-sm text-gray-500 max-w-sm">Não conseguimos gerar seu plano agora. Por favor, copie o erro abaixo e envie para o suporte:</p>
-          <textarea
-            readOnly
-            value={lastError}
-            className="w-full max-w-md h-32 p-3 text-xs font-mono bg-gray-50 border border-gray-200 rounded-xl outline-none"
-          />
-          <button
-            onClick={() => setLastError(null)}
-            className="px-6 py-2 bg-[#2d4a22] text-white rounded-full font-bold"
-          >
-            Tentar Novamente
-          </button>
+        <div className="h-screen flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <h2 className="text-xl font-bold">Ops! Algo deu errado</h2>
+          <p className="text-sm text-gray-500">{lastError}</p>
+          <button onClick={() => setLastError(null)} className="px-6 py-2 bg-[#2d4a22] text-white rounded-full">Tentar Novamente</button>
         </div>
       );
     }
 
-    if (isDiagnosing) {
-      return <DiagnosisForm onFinish={handleFinishDiagnosis} onCancel={() => setIsDiagnosing(false)} />;
-    }
+    if (phase === 'landing') return <LandingPage onStartQuiz={() => setPhase('quiz')} />;
+    if (phase === 'quiz') return <LandingQuiz onFinish={handleQuizFinish} />;
+    if (phase === 'result') return (
+      <ResultView
+        diagnosisText={hairPlan?.summary || "Analisando seus fios..."}
+        initialPlan={hairPlan?.tasks.slice(0, 3).map(t => t.title) || ["Carregando plano..."]}
+        onSubscribe={() => setPhase('subscription')}
+      />
+    );
+    if (phase === 'subscription') return (
+      <SubscriptionView
+        onSuccess={() => { setPhase('app'); setActiveTab('dashboard'); }}
+        onCancel={() => setPhase('app')}
+      />
+    );
 
-    switch (activeTab) {
-      case 'home':
-        return <HomeView hairPlan={hairPlan} onStartDiagnosis={handleStartDiagnosis} />;
-      case 'schedule':
-        return hairPlan ? (
-          <ScheduleView plan={hairPlan} onToggleTask={toggleTask} />
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-bold text-gray-800">Sem cronograma ativo</h3>
-            <p className="text-sm text-gray-500 mb-6">Inicie seu diagnóstico para gerar um plano personalizado.</p>
-            <button
-              onClick={handleStartDiagnosis}
-              className="bg-[#2d4a22] text-white px-8 py-3 rounded-full font-semibold"
-            >
-              Começar Diagnóstico
-            </button>
+    // Main App Phase
+    if (!session) return <AuthView onSuccess={() => { }} />;
+
+    return (
+      <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+        {activeTab === 'home' && <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />}
+        {activeTab === 'dashboard' && <DashboardView hairPlan={hairPlan} />}
+        {activeTab === 'schedule' && (hairPlan ? <ScheduleView plan={hairPlan} onToggleTask={() => { }} /> : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />)}
+        {activeTab === 'chat' && <ChatView />}
+        {activeTab === 'profile' && (
+          <div className="p-8 space-y-6">
+            <h2 className="text-2xl font-bold text-[#2d4a22]">Sua Conta</h2>
+            <button onClick={() => supabase.auth.signOut()} className="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold">Sair da Conta</button>
           </div>
-        );
-      case 'chat':
-        return <ChatView />;
-      case 'profile':
-        return (
-          <div className="p-4 space-y-6">
-            <h2 className="text-2xl font-bold text-[#2d4a22]">Configurações</h2>
-
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Preferências</h3>
-              <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#2d4a22]">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-800">Lembretes Diários</p>
-                      <p className="text-[10px] text-gray-400">Notificações para suas tarefas</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleToggleNotifications}
-                    className={`w-12 h-6 rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-[#2d4a22]' : 'bg-gray-200'}`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Ações de Conta</h3>
-              <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4">
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                  }}
-                  className="w-full text-left text-gray-600 font-medium flex items-center space-x-3"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-6 0v-1m6-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3" />
-                  </svg>
-                  <span>Sair da Conta</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (confirm("Deseja realmente apagar seu progresso?")) {
-                      localStorage.removeItem('capillaire_plan');
-                      localStorage.removeItem('capillaire_notifs');
-                      setHairPlan(null);
-                      setNotificationsEnabled(false);
-                      setActiveTab('home');
-                    }
-                  }}
-                  className="w-full text-left text-red-500 font-medium flex items-center space-x-3"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span>Reiniciar Aplicativo</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="text-center text-[10px] text-gray-400 pt-10">
-              Cabelos de Rainha v1.1.0<br />Feito com ❤️ por Especialistas
-            </div>
-          </div>
-        );
-      default:
-        return <HomeView hairPlan={hairPlan} onStartDiagnosis={handleStartDiagnosis} />;
-    }
+        )}
+      </Layout>
+    );
   };
 
-  if (isAuthLoading) {
+  if (isAuthLoading && !diagnosisData) {
     return (
       <div className="min-h-screen bg-[#fcfbf7] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#2d4a22] border-t-transparent rounded-full animate-spin"></div>
@@ -369,55 +194,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (showLanding) {
-    return <LandingQuiz onStart={() => setShowLanding(false)} />;
-  }
-
-  if (!session) {
-    return <AuthView onSuccess={() => { }} />;
-  }
-
-  return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
-      {renderContent()}
-
-      {/* iOS Install Prompt Overlay */}
-      {showIOSInstallPrompt && (
-        <div className="fixed bottom-24 left-4 right-4 bg-white rounded-3xl p-6 shadow-2xl border border-emerald-100 z-[100] animate-in slide-in-from-bottom duration-500">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#2d4a22] rounded-xl flex items-center justify-center text-white text-xl">👑</div>
-              <div>
-                <h4 className="font-bold text-gray-800">Instalar Cabelos de Rainha</h4>
-                <p className="text-[10px] text-gray-400">Para receber lembretes no iPhone</p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setShowIOSInstallPrompt(false);
-                localStorage.setItem('ios_prompt_seen', 'true');
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs">1</div>
-              <p>Clique no ícone de <strong>Compartilhar</strong> (quadrado com seta)</p>
-            </div>
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs">2</div>
-              <p>Role para baixo e toque em <strong>'Adicionar à Tela de Início'</strong></p>
-            </div>
-          </div>
-        </div>
-      )}
-    </Layout>
-  );
+  return renderContent();
 };
 
 export default App;
