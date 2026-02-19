@@ -154,7 +154,7 @@ const App: React.FC = () => {
       if (permission === "granted") {
         setNotificationsEnabled(true);
         localStorage.setItem('capillaire_notifs', 'true');
-        new Notification("Capillaire AI", {
+        new Notification("Cabelos de Rainha", {
           body: "Lembretes diários ativados com sucesso! ✨",
           icon: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
         });
@@ -300,7 +300,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="text-center text-[10px] text-gray-400 pt-10">
-              Capillaire AI v1.1.0<br />Feito com ❤️ por Especialistas
+              Cabelos de Rainha v1.1.0<br />Feito com ❤️ por Especialistas
             </div>
           </div>
         );

@@ -14,8 +14,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
       <header className="px-6 pt-8 pb-4 bg-[#fcfbf7]">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-[#2d4a22]">Capillaire</h1>
-            <p className="text-xs text-[#6b7c5e] uppercase tracking-widest font-medium">Hair Intelligence</p>
+            <h1 className="text-2xl font-bold text-[#2d4a22]">Cabelos de Rainha</h1>
+            <p className="text-xs text-[#6b7c5e] uppercase tracking-widest font-medium">Cronograma Capilar Inteligente</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-[#e8f0e3] flex items-center justify-center text-[#2d4a22]">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center z-50">
-        <button 
+        <button
           onClick={() => setActiveTab('home')}
           className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'home' ? 'text-[#2d4a22]' : 'text-gray-400'}`}
         >
@@ -41,7 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           </svg>
           <span className="text-[10px] font-medium">Home</span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('schedule')}
           className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'schedule' ? 'text-[#2d4a22]' : 'text-gray-400'}`}
         >
@@ -50,7 +50,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           </svg>
           <span className="text-[10px] font-medium">Plano</span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('chat')}
           className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'chat' ? 'text-[#2d4a22]' : 'text-gray-400'}`}
         >
@@ -59,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           </svg>
           <span className="text-[10px] font-medium">Assistente</span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('profile')}
           className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'profile' ? 'text-[#2d4a22]' : 'text-gray-400'}`}
         >

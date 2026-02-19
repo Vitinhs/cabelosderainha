@@ -51,7 +51,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-[#fcfbf7]">
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold text-[#2d4a22] mb-2">Capillaire AI</h1>
+                    <h1 className="text-4xl font-bold text-[#2d4a22] mb-2">Cabelos de Rainha</h1>
                     <p className="text-gray-500 italic">Sua jornada para um cabelo natural e saudável</p>
                 </div>
 

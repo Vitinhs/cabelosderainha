@@ -24,7 +24,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
     setQuickTip(null);
     try {
       const tip = await fastHairTip(problem, hairPlan?.diagnosis);
-      setQuickTip(tip);
+      setQuickTip(tip || null);
     } catch (error) {
       setQuickTip("Ops! Não consegui buscar sua dica agora. Tente novamente em instantes.");
     } finally {
@@ -51,7 +51,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
             Sua jornada para um cabelo saudável e livre de químicos começa aqui.
           </p>
           {!hairPlan ? (
-            <button 
+            <button
               onClick={onStartDiagnosis}
               className="bg-white text-[#2d4a22] px-6 py-3 rounded-full text-sm font-bold shadow-lg active:scale-95 transition-all hover:bg-emerald-50"
             >
@@ -115,7 +115,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-[#2d4a22]">Dica Express</h3>
           {quickTip && (
-            <button 
+            <button
               onClick={() => { setQuickTip(null); setSelectedProblem(null); }}
               className="text-[10px] text-gray-400 font-bold uppercase hover:text-red-400 transition-colors"
             >
@@ -124,7 +124,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
           )}
         </div>
         <p className="text-xs text-gray-500 px-1">Precisa de uma solução rápida para agora? Escolha um tema:</p>
-        
+
         <div className="flex overflow-x-auto space-x-3 pb-3 no-scrollbar -mx-1 px-1">
           {commonProblems.map((p) => (
             <button
@@ -132,8 +132,8 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
               onClick={() => handleGetTip(p.label)}
               disabled={isLoadingTip}
               className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2.5 rounded-2xl border transition-all text-sm font-medium
-                ${selectedProblem === p.label 
-                  ? 'bg-[#2d4a22] text-white border-[#2d4a22] shadow-md shadow-emerald-900/10' 
+                ${selectedProblem === p.label
+                  ? 'bg-[#2d4a22] text-white border-[#2d4a22] shadow-md shadow-emerald-900/10'
                   : 'bg-white border-gray-100 text-gray-600 hover:border-[#2d4a22]/30 active:scale-95'}
                 ${isLoadingTip && selectedProblem !== p.label ? 'opacity-50' : 'opacity-100'}
               `}
@@ -147,7 +147,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
         {(isLoadingTip || quickTip) && (
           <div className="bg-white border border-[#2d4a22]/10 rounded-3xl p-6 shadow-sm animate-in slide-in-from-top duration-300 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-[#2d4a22]"></div>
-            
+
             {isLoadingTip ? (
               <div className="flex items-center space-x-4 py-2">
                 <div className="relative">
@@ -170,7 +170,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
                     </div>
                     <span className="text-xs font-bold text-[#2d4a22] uppercase tracking-widest">Dica: {selectedProblem}</span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleGetTip(selectedProblem!)}
                     className="p-1.5 hover:bg-gray-50 rounded-full transition-colors text-gray-400"
                     title="Pedir outra dica"
@@ -196,7 +196,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
 
       {/* Philosophy static cards */}
       <section className="space-y-4">
-        <h3 className="text-lg font-bold text-[#2d4a22]">Filosofia Capillaire</h3>
+        <h3 className="text-lg font-bold text-[#2d4a22]">Filosofia Cabelos de Rainha</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white border border-gray-100 p-5 rounded-3xl flex flex-col items-center text-center space-y-3 shadow-sm">
             <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-600 text-xl shadow-inner">✨</div>

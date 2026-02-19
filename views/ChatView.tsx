@@ -27,7 +27,7 @@ const ChatView: React.FC = () => {
 
     try {
       const response = await chatWithAssistant(input, messages);
-      const modelMsg: ChatMessage = { role: 'model', content: response, timestamp: Date.now() };
+      const modelMsg: ChatMessage = { role: 'model', content: response || "", timestamp: Date.now() };
       setMessages(prev => [...prev, modelMsg]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'model', content: 'Desculpe, tive um problema ao processar sua pergunta. Pode repetir?', timestamp: Date.now() }]);
@@ -39,18 +39,17 @@ const ChatView: React.FC = () => {
   return (
     <div className="h-full flex flex-col pt-4 animate-in fade-in duration-300">
       <header className="mb-4">
-        <h2 className="text-2xl font-bold text-[#2d4a22]">Assistente Capillaire</h2>
+        <h2 className="text-2xl font-bold text-[#2d4a22]">Assistente Cabelos de Rainha</h2>
         <p className="text-sm text-gray-500">Tire suas dúvidas em tempo real.</p>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-2 no-scrollbar pb-4">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
-              msg.role === 'user' 
-                ? 'bg-[#2d4a22] text-white rounded-tr-none' 
-                : 'bg-gray-100 text-gray-700 rounded-tl-none'
-            }`}>
+            <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+              ? 'bg-[#2d4a22] text-white rounded-tr-none'
+              : 'bg-gray-100 text-gray-700 rounded-tl-none'
+              }`}>
               {msg.content}
             </div>
           </div>
@@ -67,7 +66,7 @@ const ChatView: React.FC = () => {
       </div>
 
       <div className="py-4 border-t border-gray-100 flex items-center space-x-2">
-        <input 
+        <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -75,7 +74,7 @@ const ChatView: React.FC = () => {
           placeholder="Pergunte algo..."
           className="flex-1 p-4 bg-gray-50 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2d4a22]/20"
         />
-        <button 
+        <button
           onClick={handleSend}
           disabled={isTyping}
           className="p-4 bg-[#2d4a22] text-white rounded-2xl disabled:opacity-50 transition-opacity"

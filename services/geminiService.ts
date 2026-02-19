@@ -119,7 +119,7 @@ export const chatWithAssistant = async (message: string, history: any[]) => {
   const chat = ai.chats.create({
     model: 'gemini-2.5-flash-lite',
     config: {
-      systemInstruction: 'Você é o Assistente Capillaire. Especialista em terapias naturais (Babosa, Óleos, Argilas). Ajude o usuário com seu cronograma. Nunca sugira químicos agressivos.',
+      systemInstruction: 'Você é o Assistente Cabelos de Rainha. Especialista em terapias naturais (Babosa, Óleos, Argilas). Ajude o usuário com seu cronograma. Nunca sugira químicos agressivos.',
     },
   });
 
