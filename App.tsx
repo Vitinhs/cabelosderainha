@@ -122,7 +122,14 @@ const App: React.FC = () => {
 
       if (data && data.length > 0) {
         console.log("Existing hair plan found for user.");
-        setHairPlan(data[0] as unknown as HairPlan);
+        const plan = data[0];
+        setHairPlan({
+          ...plan,
+          createdAt: plan.created_at,
+          diagnosis: plan.diagnosis,
+          tasks: plan.tasks,
+          summary: plan.summary
+        } as unknown as HairPlan);
       } else {
         console.log("No hair plan found for this user in database.");
       }
