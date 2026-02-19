@@ -1,13 +1,73 @@
-
-import React from 'react';
-import { motion } from 'framer-motion';
-import { HairPlan } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface DashboardViewProps {
     hairPlan: HairPlan | null;
+    clienteId: string | null;
 }
 
-const DashboardView: React.FC<DashboardViewProps> = ({ hairPlan }) => {
+const VideoVIPSection: React.FC<{ clienteId: string | null }> = ({ clienteId }) => {
+    const [videoUrl, setVideoUrl] = React.useState<string | null>(null);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+
+    const handleGerarVideo = async () => {
+        if (!clienteId) {
+            setError("ID do cliente não encontrado. Tente recarregar.");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        try {
+            const { data, error: functionError } = await supabase.functions.invoke('vip-video', {
+                body: { clienteId, script: "Tutorial VIP de cronograma capilar" }
+            });
+
+            if (functionError) throw functionError;
+            if (data.error) throw new Error(data.message || data.error);
+
+            setVideoUrl(data.videoUrl);
+        } catch (err: any) {
+            console.error("Erro ao gerar vídeo:", err);
+            setError(err.message || "Falha ao gerar vídeo.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            {videoUrl ? (
+                <div className="relative rounded-2xl overflow-hidden shadow-lg aspect-video bg-black">
+                    <video src={videoUrl} controls className="w-full h-full" autoPlay />
+                </div>
+            ) : (
+                <div className="p-6 bg-emerald-50 rounded-2xl border border-dashed border-emerald-200 text-center space-y-4">
+                    <div className="text-4xl">🎬</div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-bold text-[#2d4a22]">Seu conteúdo personalizado</p>
+                        <p className="text-[10px] text-gray-500">Clique abaixo para gerar seu vídeo exclusivo da semana com IA.</p>
+                    </div>
+                </div>
+            )}
+
+            {error && <p className="text-[10px] text-red-500 font-medium px-2 italic">⚠️ {error}</p>}
+
+            <button
+                onClick={handleGerarVideo}
+                disabled={loading}
+                className="w-full py-4 bg-[#2d4a22] text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-[#1f3317] transition-all disabled:opacity-50"
+            >
+                {loading ? "Processando..." : (videoUrl ? "Gerar Outro Vídeo" : "Gerar Meu Vídeo VIP")}
+            </button>
+            <p className="text-[9px] text-center text-gray-400">
+                Lembre-se: usuários free podem gerar 1 vídeo por semana.
+            </p>
+        </div>
+    );
+};
+
+const DashboardView: React.FC<DashboardViewProps> = ({ hairPlan, clienteId }) => {
     const progress = 35; // Mock progress
 
     return (
@@ -60,25 +120,14 @@ const DashboardView: React.FC<DashboardViewProps> = ({ hairPlan }) => {
                     </div>
                 </section>
 
-                {/* Content Corner */}
+                {/* VIP Video Section */}
                 <section className="bg-white rounded-[2.5rem] p-8 border border-emerald-50 shadow-sm space-y-6">
-                    <h3 className="font-bold text-[#2d4a22] border-b border-gray-50 pb-4">Conteúdo VIP</h3>
-                    <div className="grid gap-4">
-                        <div className="p-4 bg-yellow-50 rounded-2xl flex items-center space-x-4 border border-yellow-100">
-                            <span className="text-2xl">📹</span>
-                            <div>
-                                <p className="text-xs font-bold text-yellow-800">Masterclass Babosa</p>
-                                <p className="text-[10px] text-yellow-600">Aprenda a extrair o gel puro.</p>
-                            </div>
-                        </div>
-                        <div className="p-4 bg-blue-50 rounded-2xl flex items-center space-x-4 border border-blue-100">
-                            <span className="text-2xl">📚</span>
-                            <div>
-                                <p className="text-xs font-bold text-blue-800">Guia de Umectação</p>
-                                <p className="text-[10px] text-blue-600">E-book completo em PDF.</p>
-                            </div>
-                        </div>
+                    <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                        <h3 className="font-bold text-[#2d4a22]">Vídeo VIP da Semana</h3>
+                        <span className="text-[10px] bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full font-bold uppercase">Novo</span>
                     </div>
+
+                    <VideoVIPSection clienteId={clienteId} />
                 </section>
             </div>
 

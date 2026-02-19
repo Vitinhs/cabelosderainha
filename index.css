@@ -1,7 +1,16 @@
 @import "tailwindcss";
 
-body {
-    background-color: #fcfbf7;
-    margin: 0;
-    font-family: 'Inter', sans-serif;
+@layer base {
+    body {
+        background-color: #fcfbf7;
+        margin: 0;
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        font-family: 'Playfair Display', serif;
+    }
 }

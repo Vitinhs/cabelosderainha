@@ -10,31 +10,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Cabelos de Rainha">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
         rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fcfbf7;
-        }
 
-        h1,
-        h2,
-        h3 {
-            font-family: 'Playfair Display', serif;
-        }
-    </style>
-
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
-                   script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; 
-                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-                   font-src 'self' https://fonts.gstatic.com; 
-                   img-src 'self' data: https://cdn-icons-png.flaticon.com; 
-                   connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com;">
+    <!-- CSP Relaxado para Depuração -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; font-src 'self' data: *; img-src 'self' data: *; connect-src 'self' *;">
     <link rel="stylesheet" href="/index.css">
 </head>
 

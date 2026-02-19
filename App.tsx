@@ -26,26 +26,44 @@ const App: React.FC = () => {
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [isSubscriber, setIsSubscriber] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string | null>(null);
-  const [diagnosisData, setDiagnosisData] = useState<{ answers: QuizAnswers; lead: any } | null>(null);
+  const [diagnosisData, setDiagnosisData] = useState<{ answers: QuizAnswers; lead: any; clientId: string | null } | null>(null);
 
   useEffect(() => {
+    console.log("App mounted. Checking session...");
+
+    const sessionTimeout = setTimeout(() => {
+      if (isAuthLoading) {
+        console.warn("Session check hanging... forcing loading to false.");
+        setIsAuthLoading(false);
+      }
+    }, 5000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check result:", session ? "Session found" : "No session");
+      clearTimeout(sessionTimeout);
       setSession(session);
       if (session) {
         setPhase('app');
         loadUserPlan(session.user.id);
         checkSubscription(session.user.id);
+        syncClientId(session.user.email);
       } else {
         setIsAuthLoading(false);
       }
+    }).catch(err => {
+      console.error("Error getting session:", err);
+      clearTimeout(sessionTimeout);
+      setIsAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state change:", _event, session ? "User active" : "No user");
       setSession(session);
       if (session) {
         setPhase('app');
         loadUserPlan(session.user.id);
         checkSubscription(session.user.id);
+        syncClientId(session.user.email);
       } else {
         setHairPlan(null);
         setIsSubscriber(false);
@@ -53,8 +71,19 @@ const App: React.FC = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(sessionTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const syncClientId = async (email: string | undefined) => {
+    if (!email) return;
+    const { data } = await supabase.from('clientes').select('id').eq('email', email).maybeSingle();
+    if (data && !diagnosisData?.clientId) {
+      setDiagnosisData(prev => prev ? { ...prev, clientId: data.id } : { answers: {}, lead: {}, clientId: data.id });
+    }
+  };
 
   const checkSubscription = async (userId: string) => {
     const { data } = await supabase
@@ -87,9 +116,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleQuizFinish = async (answers: QuizAnswers, lead: any) => {
-    console.log("Quiz finish received in App.tsx. Answers:", answers);
-    setDiagnosisData({ answers, lead });
+  const handleQuizFinish = async (answers: QuizAnswers, lead: any, clientId: string | null) => {
+    console.log("Quiz finish received in App.tsx. ClientId:", clientId);
+    setDiagnosisData({ answers, lead, clientId });
     setPhase('result');
   };
 
@@ -178,7 +207,7 @@ const App: React.FC = () => {
     return (
       <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
         {activeTab === 'home' && <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />}
-        {activeTab === 'dashboard' && <DashboardView hairPlan={hairPlan} />}
+        {activeTab === 'dashboard' && <DashboardView hairPlan={hairPlan} clienteId={diagnosisData?.clientId || null} />}
         {activeTab === 'schedule' && (hairPlan ? <ScheduleView plan={hairPlan} onToggleTask={() => { }} /> : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />)}
         {activeTab === 'chat' && <ChatView />}
         {activeTab === 'profile' && (

@@ -13,7 +13,7 @@ const questions = [
 ];
 
 interface LandingQuizProps {
-  onFinish: (answers: QuizAnswers, lead: { nome: string; email: string }) => void;
+  onFinish: (answers: QuizAnswers, lead: { nome: string; email: string }, clientId: string | null) => void;
 }
 
 export default function LandingQuiz({ onFinish }: LandingQuizProps) {
@@ -44,24 +44,23 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
     setLoading(true);
     try {
       // salvar respostas + lead no Supabase
-      const { error } = await supabase.from('clientes').insert([{
+      const { data, error } = await supabase.from('clientes').insert([{
         nome: leadInfo.nome,
         email: leadInfo.email,
         respostas_quiz: answers,
         cronograma_entregue: false
-      }]);
+      }]).select('id').single();
 
       if (error) {
         console.warn("Supabase insert error (likely RLS), proceeding anyway:", error);
+        onFinish(answers, leadInfo, null);
       } else {
-        console.log("Lead saved successfully.");
+        console.log("Lead saved successfully with ID:", data.id);
+        onFinish(answers, leadInfo, data.id);
       }
-
-      onFinish(answers, leadInfo);
     } catch (error) {
       console.error("Erro ao salvar lead:", error);
-      // Even if it fails, let's proceed to result to not block user
-      onFinish(answers, leadInfo);
+      onFinish(answers, leadInfo, null);
     } finally {
       setLoading(false);
     }
