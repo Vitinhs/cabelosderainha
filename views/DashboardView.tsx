@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { HairPlan } from '../types';
 import { supabase } from '../services/supabaseClient';
 
 interface DashboardViewProps {
@@ -6,9 +9,9 @@ interface DashboardViewProps {
 }
 
 const VideoVIPSection: React.FC<{ clienteId: string | null }> = ({ clienteId }) => {
-    const [videoUrl, setVideoUrl] = React.useState<string | null>(null);
-    const [loading, setLoading] = React.useState(false);
-    const [error, setError] = React.useState<string | null>(null);
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleGerarVideo = async () => {
         if (!clienteId) {
