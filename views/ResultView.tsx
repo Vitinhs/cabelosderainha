@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { jsPDF } from 'jspdf';
 
 interface ResultViewProps {
     diagnosisText: string;
@@ -9,6 +10,50 @@ interface ResultViewProps {
 }
 
 const ResultView: React.FC<ResultViewProps> = ({ diagnosisText, initialPlan, onSubscribe }) => {
+
+    const handleDownloadPDF = () => {
+        const doc = new jsPDF();
+        const margin = 20;
+        let y = 20;
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(45, 74, 34); // #2d4a22
+        doc.text("Cronograma Capilar de Rainha", margin, y);
+        y += 15;
+
+        // Diagnosis
+        doc.setFontSize(14);
+        doc.setTextColor(33, 33, 33);
+        doc.text("Seu Diagnóstico:", margin, y);
+        y += 10;
+
+        doc.setFontSize(11);
+        const splitDiagnosis = doc.splitTextToSize(diagnosisText, 170);
+        doc.text(splitDiagnosis, margin, y);
+        y += (splitDiagnosis.length * 7) + 10;
+
+        // Plan
+        doc.setFontSize(14);
+        doc.setTextColor(45, 74, 34);
+        doc.text("Suas Primeiras Tarefas:", margin, y);
+        y += 10;
+
+        doc.setFontSize(11);
+        doc.setTextColor(33, 33, 33);
+        initialPlan.forEach((task, index) => {
+            doc.text(`${index + 1}. ${task}`, margin + 5, y);
+            y += 8;
+        });
+
+        y += 15;
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Gerado por Capillaire AI - Sua beleza natural.", margin, y);
+
+        doc.save("meu-cronograma-capilar.pdf");
+    };
+
     return (
         <div className="min-h-screen bg-[#fcfbf7] flex items-center justify-center p-4">
             <div className="max-w-2xl w-full">
@@ -58,7 +103,10 @@ const ResultView: React.FC<ResultViewProps> = ({ diagnosisText, initialPlan, onS
                             <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-800/30 rounded-full blur-3xl"></div>
                         </div>
 
-                        <button className="w-full py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors">
+                        <button
+                            onClick={handleDownloadPDF}
+                            className="w-full py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors"
+                        >
                             Baixar Versão Gratuita em PDF
                         </button>
                     </div>
