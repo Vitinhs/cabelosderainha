@@ -79,9 +79,20 @@ const App: React.FC = () => {
 
   const syncClientId = async (email: string | undefined) => {
     if (!email) return;
-    const { data } = await supabase.from('clientes').select('id').eq('email', email).maybeSingle();
-    if (data && !diagnosisData?.clientId) {
-      setDiagnosisData(prev => prev ? { ...prev, clientId: data.id } : { answers: {}, lead: {}, clientId: data.id });
+    console.log("Syncing client data for email:", email);
+    const { data } = await supabase.from('clientes').select('id, respostas_quiz').eq('email', email).maybeSingle();
+
+    if (data) {
+      console.log("Client found in 'clientes' table:", data.id);
+      setDiagnosisData(prev => {
+        const base = prev || { answers: {}, lead: {}, clientId: data.id };
+        return { ...base, clientId: data.id, answers: data.respostas_quiz || base.answers };
+      });
+
+      // Se não temos plano carregado, mas temos respostas, podemos tentar gerar/carregar
+      if (!hairPlan && data.respostas_quiz && Object.keys(data.respostas_quiz).length > 0) {
+        console.log("User has saved quiz answers but no plan in state. Phase is:", phase);
+      }
     }
   };
 
@@ -99,15 +110,21 @@ const App: React.FC = () => {
   const loadUserPlan = async (userId: string) => {
     setIsAuthLoading(true);
     try {
-      const { data } = await supabase
+      console.log("Loading hair plan for user:", userId);
+      const { data, error } = await supabase
         .from('hair_plans')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .maybeSingle();
+        .limit(1);
 
-      if (data) {
-        setHairPlan(data as unknown as HairPlan);
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        console.log("Existing hair plan found for user.");
+        setHairPlan(data[0] as unknown as HairPlan);
+      } else {
+        console.log("No hair plan found for this user in database.");
       }
     } catch (error) {
       console.error("Erro ao carregar plano:", error);
@@ -147,7 +164,21 @@ const App: React.FC = () => {
       console.log("Calling generateHairPlan with diagnosis:", diagnosis);
       const plan = await generateHairPlan(diagnosis);
       console.log("Hair plan generated successfully:", plan);
+
       setHairPlan(plan);
+
+      // Persistir no Supabase se logado
+      if (session?.user) {
+        console.log("User logged in. Persisting plan to database...");
+        const { error } = await supabase.from('hair_plans').insert([{
+          user_id: session.user.id,
+          diagnosis: diagnosis,
+          tasks: plan.tasks,
+          summary: plan.summary
+        }]);
+        if (error) console.error("Erro ao salvar plano no banco:", error);
+        else console.log("Plan saved to database.");
+      }
     } catch (error: any) {
       console.error("Error in handleGeneratePlan:", error);
       setLastError(error.message);
