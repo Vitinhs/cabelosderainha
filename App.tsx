@@ -12,6 +12,7 @@ import LandingQuiz from './src/components/LandingQuiz';
 import ResultView from './views/ResultView';
 import SubscriptionView from './views/SubscriptionView';
 import DashboardView from './views/DashboardView';
+import ProfileView from './views/ProfileView';
 import { supabase } from './services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
@@ -259,12 +260,7 @@ const App: React.FC = () => {
         {activeTab === 'dashboard' && <DashboardView hairPlan={hairPlan} clienteId={diagnosisData?.clientId || null} />}
         {activeTab === 'schedule' && (hairPlan ? <ScheduleView plan={hairPlan} onToggleTask={() => { }} /> : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />)}
         {activeTab === 'chat' && <ChatView />}
-        {activeTab === 'profile' && (
-          <div className="p-8 space-y-6">
-            <h2 className="text-2xl font-bold text-[#2d4a22]">Sua Conta</h2>
-            <button onClick={() => supabase.auth.signOut()} className="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold">Sair da Conta</button>
-          </div>
-        )}
+        {activeTab === 'profile' && <ProfileView session={session} />}
       </Layout>
     );
   };
