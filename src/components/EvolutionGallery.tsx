@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../services/supabaseClient';
+import { supabase } from '@/services/supabaseClient';
 
 interface EvolutionGalleryProps {
     userId: string;

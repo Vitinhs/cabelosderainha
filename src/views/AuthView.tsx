@@ -1,9 +1,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../services/supabaseClient';
-import { Button } from '../src/components/ui/Button';
-import { Input } from '../src/components/ui/Input';
+import { supabase } from '@/services/supabaseClient';
+import { Button, Input, Label } from '@/components/ui';
 
 interface AuthViewProps {
     onSuccess: () => void;
@@ -84,6 +83,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                         <button
                             key={m}
                             onClick={() => { setMode(m); setMessage(null); }}
+                            type="button"
                             className="flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-200"
                             style={{
                                 background: mode === m ? 'var(--color-surface-card)' : 'transparent',
@@ -106,9 +106,11 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.2 }}
+                                className="space-y-1.5"
                             >
+                                <Label htmlFor="fullName">Seu Nome</Label>
                                 <Input
-                                    label="Seu Nome"
+                                    id="fullName"
                                     type="text"
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
@@ -120,25 +122,31 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                         )}
                     </AnimatePresence>
 
-                    <Input
-                        label="E-mail"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="seu@email.com"
-                        required
-                        autoComplete="email"
-                    />
+                    <div className="space-y-1.5">
+                        <Label htmlFor="email">E-mail</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="seu@email.com"
+                            required
+                            autoComplete="email"
+                        />
+                    </div>
 
-                    <Input
-                        label="Senha"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder={mode === 'register' ? 'Mínimo 6 caracteres' : '••••••••'}
-                        required
-                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    />
+                    <div className="space-y-1.5">
+                        <Label htmlFor="password">Senha</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder={mode === 'register' ? 'Mínimo 6 caracteres' : '••••••••'}
+                            required
+                            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                        />
+                    </div>
 
                     {/* Mensagem de feedback */}
                     <AnimatePresence>
@@ -162,7 +170,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
                         )}
                     </AnimatePresence>
 
-                    <Button type="submit" variant="primary" loading={loading} size="lg">
+                    <Button type="submit" variant="default" loading={loading} size="lg">
                         {mode === 'login' ? 'Entrar na minha conta' : 'Criar minha conta grátis'}
                     </Button>
                 </form>

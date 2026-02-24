@@ -1,22 +1,27 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Layout from './components/Layout';
-import { HairPlan, HairDiagnosis, QuizAnswers, HairType, ScalpType, MainGoal } from './types';
-import { generateHairPlan } from './services/geminiService';
-import HomeView from './views/HomeView';
-import ScheduleView from './views/ScheduleView';
-import ChatView from './views/ChatView';
-import AuthView from './views/AuthView';
-import LandingPage from './views/LandingPage';
-import LandingQuiz from './src/components/LandingQuiz';
-import ResultView from './views/ResultView';
-import SubscriptionView from './views/SubscriptionView';
-import DashboardView from './views/DashboardView';
-import ProfileView from './views/ProfileView';
-import { supabase } from './services/supabaseClient';
+import Layout from '@/components/Layout';
+import { HairPlan, HairDiagnosis, QuizAnswers, HairType, ScalpType, MainGoal } from '@/types';
+import { generateHairPlan } from '@/services/geminiService';
+import HomeView from '@/views/HomeView';
+import ScheduleView from '@/views/ScheduleView';
+import ChatView from '@/views/ChatView';
+import AuthView from '@/views/AuthView';
+import LandingPage from '@/views/LandingPage';
+import LandingQuiz from '@/components/LandingQuiz';
+import ResultView from '@/views/ResultView';
+import SubscriptionView from '@/views/SubscriptionView';
+import DashboardView from '@/views/DashboardView';
+import ProfileView from '@/views/ProfileView';
+
+import { supabase } from '@/services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
-import { PrivateRoute, PlanGuard } from './src/core/routing';
+import { PrivateRoute, PlanGuard } from '@/core/routing';
+import { Toaster } from "@/components/ui/sonner";
+
+import { toast } from "sonner";
+
 
 type JourneyPhase = 'landing' | 'quiz' | 'result' | 'subscription' | 'app';
 
@@ -245,16 +250,20 @@ const App: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="h-screen bg-[#fcfbf7] flex flex-col items-center justify-center space-y-6 text-center p-6"
+          className="h-screen bg-background flex flex-col items-center justify-center space-y-8 text-center p-6"
         >
-          <div className="w-16 h-16 border-4 border-[#2d4a22] border-t-transparent rounded-full animate-spin"></div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-[#2d4a22] font-serif italic">Criando seu cronograma...</h2>
-            <p className="text-sm text-gray-500 max-w-xs">Nossa IA está analisando seus fios para construir a melhor rotina 100% natural.</p>
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-primary/20 rounded-full"></div>
+            <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-bold text-primary font-serif italic">Criando seu cronograma...</h2>
+            <p className="text-muted-foreground max-w-xs mx-auto animate-pulse">Nossa IA está analisando seus fios para construir seu ritual de beleza único.</p>
           </div>
         </motion.div>
       );
     }
+
 
     if (lastError) {
       return (
@@ -373,10 +382,14 @@ const App: React.FC = () => {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {renderPhase()}
-    </AnimatePresence>
+    <>
+      <Toaster position="top-center" richColors />
+      <AnimatePresence mode="wait">
+        {renderPhase()}
+      </AnimatePresence>
+    </>
   );
 };
+
 
 export default App;

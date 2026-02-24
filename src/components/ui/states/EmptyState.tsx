@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card } from '../Card';
-import { Button } from '../Button';
+import { Card } from '../card';
+import { Button } from '../button';
 
 interface EmptyStateProps {
     /** Emoji ou ícone decorativo exibido no topo */
@@ -31,7 +31,7 @@ export function EmptyState({
     className = '',
 }: EmptyStateProps) {
     return (
-        <Card variant="flat" className={`py-10 flex flex-col items-center text-center space-y-4 ${className}`}>
+        <Card className={`py-10 flex flex-col items-center text-center space-y-4 ${className}`}>
             {/* Decorative icon in a token-styled container */}
             <div
                 className="flex items-center justify-center text-4xl"
@@ -72,7 +72,7 @@ export function EmptyState({
             {/* Optional CTA */}
             {actionLabel && onAction && (
                 <div style={{ width: '100%', maxWidth: '16rem' }}>
-                    <Button variant="primary" size="md" onClick={onAction}>
+                    <Button variant="default" size="default" onClick={onAction}>
                         {actionLabel}
                     </Button>
                 </div>

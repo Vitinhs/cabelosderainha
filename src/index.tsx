@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { registerSW } from 'virtual:pwa-register';
-import { AuthProvider } from './src/core/auth/AuthContext';
-import { SubscriptionProvider } from './src/core/subscription/SubscriptionContext';
+import { AuthProvider } from './core/auth/AuthContext';
+import { SubscriptionProvider } from './core/subscription/SubscriptionContext';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import './index.css';
 

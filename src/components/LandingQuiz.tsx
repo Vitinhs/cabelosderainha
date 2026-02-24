@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "../../services/supabaseClient";
-import { QuizAnswers } from "../../types";
+import { supabase } from "@/services/supabaseClient";
+import { QuizAnswers } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2, ArrowRight, Lock } from "lucide-react";
 
 const questions = [
   { id: "tipo", title: "Qual é o seu tipo de cabelo?", options: ["Liso", "Ondulado", "Cacheado", "Crespo"] },
@@ -24,14 +28,12 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
   const [leadInfo, setLeadInfo] = useState({ nome: "", email: "" });
 
   const handleAnswer = (option: string) => {
-    console.log(`Quiz Step ${step}: Answered ${option}`);
     const newAnswers: QuizAnswers = { ...answers, [questions[step].id]: option };
     setAnswers(newAnswers);
 
     if (step + 1 < questions.length) {
       setStep(step + 1);
     } else {
-      console.log("Quiz reached end. Showing lead form.");
       setShowLeadForm(true);
     }
   };
@@ -40,10 +42,8 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
     e.preventDefault();
     if (!leadInfo.nome || !leadInfo.email) return;
 
-    console.log("Submitting lead...", leadInfo);
     setLoading(true);
     try {
-      // salvar respostas + lead no Supabase
       const { data, error } = await supabase.from('clientes').insert([{
         nome: leadInfo.nome,
         email: leadInfo.email,
@@ -52,10 +52,9 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
       }]).select('id').single();
 
       if (error) {
-        console.warn("Supabase insert error (likely RLS), proceeding anyway:", error);
+        console.warn("Supabase insert error, proceeding anyway:", error);
         onFinish(answers, leadInfo, null);
       } else {
-        console.log("Lead saved successfully with ID:", data.id);
         onFinish(answers, leadInfo, data.id);
       }
     } catch (error) {
@@ -69,10 +68,10 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
   const progress = Math.round((step / questions.length) * 100);
 
   return (
-    <div className="min-h-screen bg-[#fcfbf7] flex items-center justify-center p-4">
-      <div className="max-w-xl w-full">
-        <div className="bg-white shadow-2xl rounded-[2.5rem] overflow-hidden border border-emerald-50">
-          <div className="p-8 md:p-12 space-y-8">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <Card className="border-none shadow-2xl rounded-[2rem] overflow-hidden">
+          <CardContent className="p-8 md:p-12">
             <AnimatePresence mode="wait">
               {!showLeadForm ? (
                 <motion.div
@@ -80,37 +79,39 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
                   className="space-y-8"
                 >
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-[10px] font-bold text-emerald-800 uppercase tracking-widest">
-                      <span>Progresso</span>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-primary uppercase tracking-[0.2em]">
+                      <span>Passo {step + 1} de {questions.length}</span>
                       <span>{progress}%</span>
                     </div>
-                    <div className="w-full bg-emerald-50 rounded-full h-1.5">
+                    <div className="w-full bg-secondary rounded-full h-2">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
-                        className="bg-[#2d4a22] h-full rounded-full"
+                        className="bg-primary h-full rounded-full"
                       />
                     </div>
                   </div>
 
-                  <h2 className="text-3xl font-bold text-[#2d4a22] font-serif italic text-center leading-tight">
+                  <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif italic text-center leading-tight">
                     {questions[step].title}
                   </h2>
 
                   <div className="grid gap-3">
                     {questions[step].options.map((option) => (
-                      <button
+                      <Button
                         key={option}
-                        className="w-full py-5 px-8 text-left border-2 border-emerald-50 rounded-2xl hover:border-[#2d4a22] hover:bg-emerald-50 transition-all text-gray-700 font-semibold group flex justify-between items-center"
+                        variant="outline"
+                        className="w-full h-16 justify-between text-lg font-medium border-2 hover:border-primary hover:bg-accent px-8 rounded-2xl group transition-all"
                         onClick={() => handleAnswer(option)}
                       >
-                        <span>{option}</span>
-                        <div className="w-6 h-6 rounded-full border-2 border-emerald-200 group-hover:border-[#2d4a22] transition-colors" />
-                      </button>
+                        <span className="text-foreground/80 group-hover:text-primary">{option}</span>
+                        <div className="w-6 h-6 rounded-full border-2 border-primary/20 group-hover:border-primary flex items-center justify-center transition-colors">
+                          <span className="w-2 h-2 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </Button>
                     ))}
                   </div>
                 </motion.div>
@@ -120,56 +121,62 @@ export default function LandingQuiz({ onFinish }: LandingQuizProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-8"
                 >
-                  <div className="text-center space-y-2">
-                    <div className="inline-block px-4 py-1 bg-emerald-100 text-[#2d4a22] rounded-full text-[10px] font-bold uppercase tracking-widest">
-                      Quase lá
+                  <div className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent text-primary rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-sm">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Diagnóstico Concluído
                     </div>
-                    <h2 className="text-3xl font-bold text-[#2d4a22] font-serif italic">Para onde enviamos seu cronograma?</h2>
-                    <p className="text-gray-500 text-sm">Seus dados estão seguros e serão usados apenas para a entrega do seu plano personalizado.</p>
+                    <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif italic">Para onde enviamos seu ritual?</h2>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">Sua rotina personalizada baseada em ativos naturais está pronta para ser gerada.</p>
                   </div>
 
-                  <form onSubmit={handleLeadSubmit} className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Nome Completo</label>
-                      <input
+                  <form onSubmit={handleLeadSubmit} className="space-y-6 max-w-sm mx-auto">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] ml-1">Nome Completo</label>
+                      <Input
                         required
-                        type="text"
-                        className="w-full p-5 bg-gray-50 border-2 border-transparent focus:border-[#2d4a22] focus:bg-white rounded-2xl outline-none transition-all font-semibold"
+                        className="h-14 rounded-xl border-2 focus:border-primary px-6 text-base font-medium"
                         placeholder="Ex: Maria Souza"
                         value={leadInfo.nome}
                         onChange={e => setLeadInfo({ ...leadInfo, nome: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Melhor E-mail</label>
-                      <input
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] ml-1">Melhor E-mail</label>
+                      <Input
                         required
                         type="email"
-                        className="w-full p-5 bg-gray-50 border-2 border-transparent focus:border-[#2d4a22] focus:bg-white rounded-2xl outline-none transition-all font-semibold"
+                        className="h-14 rounded-xl border-2 focus:border-primary px-6 text-base font-medium"
                         placeholder="Ex: maria@email.com"
                         value={leadInfo.email}
                         onChange={e => setLeadInfo({ ...leadInfo, email: e.target.value })}
                       />
                     </div>
                     <div className="pt-4">
-                      <button
+                      <Button
                         disabled={loading}
                         type="submit"
-                        className="w-full py-5 bg-[#2d4a22] text-white rounded-2xl font-bold text-lg shadow-xl shadow-emerald-900/20 hover:bg-[#1f3317] transition-all disabled:opacity-50"
+                        className="w-full h-16 rounded-2xl font-bold text-lg shadow-2xl shadow-primary/20 group overflow-hidden relative"
                       >
-                        {loading ? "Processando..." : "Gerar Meu Cronograma"}
-                      </button>
+                        <span className="relative z-10 flex items-center gap-2">
+                          {loading ? "Processando..." : "Gerar Meu Cronograma"}
+                          {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                        </span>
+                        <div className="absolute inset-0 bg-primary-foreground/10 translate-y-full group-hover:translate-y-0 transition-transform" />
+                      </Button>
                     </div>
-                    <p className="text-[10px] text-center text-gray-400 pt-2">
-                      🔒 Seus dados estão seguros conforme a LGPD.
-                    </p>
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em]">
+                      <Lock className="w-3 h-3" />
+                      Privacidade garantida
+                    </div>
                   </form>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
+

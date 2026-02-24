@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HairPlan, DayTask, MainGoal } from '../types';
-import { Button, Badge } from '../src/components/ui';
-import { LoadingState, EmptyState, ErrorState } from '../src/components/ui/states';
-import EvolutionGallery from '../src/components/EvolutionGallery';
+import { HairPlan, DayTask, MainGoal } from '@/types';
+import { Button, Badge, Card } from '@/components/ui';
+import { LoadingState, EmptyState, ErrorState } from '@/components/ui/states';
+import EvolutionGallery from '@/components/EvolutionGallery';
 
 interface DashboardViewProps {
     hairPlan: HairPlan | null;
@@ -39,13 +39,12 @@ const SmartTip: React.FC<{ goal?: MainGoal }> = ({ goal }) => {
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="card-flat flex items-start gap-3"
-            style={{ background: 'var(--color-status-warn-bg)', borderColor: 'var(--color-border-default)' }}
+            className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50/50 border border-amber-100"
         >
             <span className="text-xl">💡</span>
             <div>
-                <p className="text-label" style={{ color: 'var(--color-status-warn-text)' }}>Dica Premium</p>
-                <p className="text-sm leading-relaxed font-medium mt-1" style={{ color: 'var(--color-status-warn-text)' }}>
+                <p className="text-[10px] font-bold text-amber-800 uppercase tracking-widest">Dica Premium</p>
+                <p className="text-sm leading-relaxed font-medium mt-1 text-amber-900/80">
                     {tip}
                 </p>
             </div>
@@ -77,9 +76,8 @@ const ConsistencyChart: React.FC<{ tasks: DayTask[] }> = ({ tasks }) => {
                         }}
                     />
                     <span
+                        className="text-[10px] font-bold"
                         style={{
-                            fontSize: '0.55rem',
-                            fontWeight: 700,
                             color: t.completed ? 'var(--color-text-brand)' : 'var(--color-text-muted)',
                         }}
                     >
@@ -134,95 +132,70 @@ const DashboardView: React.FC<DashboardViewProps> = ({
     }
 
     return (
-        <div className="py-6 space-y-6 pb-28" style={{ background: 'var(--color-surface-bg)' }}>
-
-            {/* ── Header ── */}
+        <div className="py-6 space-y-6 pb-28">
             <header className="space-y-5">
                 <div className="flex justify-between items-start">
                     <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}>
-                        <h2 className="text-section-title" style={{ fontStyle: 'italic' }}>
+                        <h2 className="text-2xl font-bold font-serif italic text-primary">
                             Seu Portal, Rainha 👑
                         </h2>
-                        <p className="text-label mt-1">Dia {completedCount + 1} da sua jornada</p>
+                        <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold">Dia {completedCount + 1} da sua jornada</p>
                     </motion.div>
-                    {isSubscriber && <Badge variant="premium" icon="✨">VIP</Badge>}
+                    {isSubscriber && <Badge variant="premium">✨ VIP</Badge>}
                 </div>
 
-                {/* Stats Grid */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="card-flat space-y-2">
-                        <p className="text-label">Progresso Geral</p>
+                    <Card className="p-4 space-y-2 bg-white/50 border-none shadow-sm">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Progresso Geral</p>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold" style={{ color: 'var(--color-text-brand)' }}>
+                            <span className="text-2xl font-bold text-primary">
                                 {progress}%
                             </span>
-                            <span className="text-xs font-bold" style={{ color: 'var(--color-action-success)' }}>
-                                +5%
-                            </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full overflow-hidden"
-                            style={{ background: 'var(--color-border-subtle)' }}>
+                        <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progress}%` }}
-                                transition={{ duration: 0.8 }}
-                                className="h-full rounded-full"
-                                style={{ background: 'var(--color-action-primary)' }}
+                                className="h-full rounded-full bg-primary"
                             />
                         </div>
-                    </div>
-                    <div className="card-flat space-y-1">
-                        <p className="text-label">Consistência</p>
+                    </Card>
+                    <Card className="p-4 space-y-1 bg-white/50 border-none shadow-sm">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Consistência</p>
                         <ConsistencyChart tasks={hairPlan?.tasks || []} />
-                    </div>
+                    </Card>
                 </div>
             </header>
 
-            {/* ── Smart Tip ── */}
             <SmartTip goal={hairPlan?.diagnosis.mainGoal} />
 
-            {/* ── Checklist ── */}
-            <section className="card space-y-5" style={{ cursor: 'default' }}>
+            <Card className="p-6 space-y-5 bg-white shadow-sm border-emerald-50">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-card-title">Meta de Hoje</h3>
-                    <span className="text-label">Checklist</span>
+                    <h3 className="text-lg font-bold text-primary">Meta de Hoje</h3>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Checklist</span>
                 </div>
 
-                <div className="space-y-3">
+                <Card className="p-4 space-y-3 bg-surface-bg border-none shadow-none">
                     <AnimatePresence>
                         {checklistTasks.length > 0 ? (
                             checklistTasks.map((t) => (
                                 <motion.div
                                     key={t.day}
                                     layout
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.92 }}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
                                     onClick={() => onToggleTask(t.day)}
-                                    className="flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-150"
-                                    style={{
-                                        background: t.completed ? 'var(--color-surface-brand)' : 'var(--color-surface-card)',
-                                        borderColor: t.completed ? 'var(--color-border-brand)' : 'var(--color-border-subtle)',
-                                    }}
+                                    className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${t.completed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-gray-100 hover:border-emerald-100'
+                                        }`}
                                 >
-                                    <div
-                                        className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                                        style={{
-                                            background: t.completed ? 'var(--color-action-primary)' : 'transparent',
-                                            borderColor: t.completed ? 'var(--color-action-primary)' : 'var(--color-border-default)',
-                                        }}
-                                    >
-                                        {t.completed && <span style={{ color: 'white', fontSize: '0.7rem' }}>✓</span>}
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${t.completed ? 'bg-primary border-primary' : 'border-gray-200'
+                                        }`}>
+                                        {t.completed && <span className="text-white text-[10px]">✓</span>}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-label">Dia {t.day}</p>
-                                        <p
-                                            className="text-sm font-bold truncate"
-                                            style={{
-                                                color: t.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                                                textDecoration: t.completed ? 'line-through' : 'none',
-                                            }}
-                                        >
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dia {t.day}</p>
+                                        <p className={`text-sm font-bold truncate ${t.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                             {t.title}
                                         </p>
                                     </div>
@@ -237,33 +210,20 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                             />
                         )}
                     </AnimatePresence>
-                </div>
-            </section>
+                </Card>
+            </Card>
 
-            {/* ── Galeria de Evolução ── */}
             {userId && (
-                <section className="card" style={{ cursor: 'default' }}>
+                <Card className="p-6 bg-white shadow-sm border-emerald-50">
                     <EvolutionGallery userId={userId} />
-                </section>
+                </Card>
             )}
 
-
-            {/* ── Support ── */}
-            <div className="card-brand text-center space-y-4">
-                <p
-                    className="text-sm"
-                    style={{ color: 'var(--color-text-onBrand)', opacity: 0.8 }}
-                >
-                    Dúvidas sobre sua rotina?
-                </p>
+            <div className="p-6 rounded-[2rem] bg-primary text-white text-center space-y-4 shadow-xl shadow-primary/20">
+                <p className="text-sm font-medium opacity-90">Dúvidas sobre sua rotina?</p>
                 <Button
-                    variant="secondary"
-                    style={{
-                        background: 'transparent',
-                        color: 'var(--color-text-onBrand)',
-                        border: '1px solid var(--color-text-onBrand)',
-                        opacity: 0.9,
-                    }}
+                    variant="outline"
+                    className="w-full bg-transparent border-white text-white hover:bg-white hover:text-primary rounded-xl"
                 >
                     Falar com Especialista
                 </Button>

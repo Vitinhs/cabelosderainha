@@ -21,23 +21,18 @@
         "jsx": "react-jsx",
         "types": [
             "vite/client",
-            "vite-plugin-pwa/client"
+            "vite-plugin-pwa/client",
+            "node"
         ],
         "baseUrl": ".",
         "paths": {
             "@/*": [
-                "./*"
+                "./src/*"
             ]
         }
     },
     "include": [
-        "services",
-        "views",
-        "components",
-        "types.ts",
-        "App.tsx",
-        "index.tsx",
-        "vite-env.d.ts"
+        "src"
     ],
     "references": [
         {

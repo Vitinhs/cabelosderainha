@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from '../Card';
+import { Card } from '../card';
 
 interface LoadingStateProps {
     /** Número de linhas skeleton a exibir. Default: 3 */
@@ -24,7 +24,7 @@ export function LoadingState({
     className = '',
 }: LoadingStateProps) {
     return (
-        <Card variant="flat" className={`space-y-4 ${className}`}>
+        <Card className={`space-y-4 ${className}`}>
             <div
                 role="status"
                 aria-label={label}

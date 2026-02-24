@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { supabase } from '../services/supabaseClient';
-import { Button, Badge } from '../src/components/ui';
+import { supabase } from '@/services/supabaseClient';
+import { Button, Badge } from '@/components/ui';
 
 interface SubscriptionViewProps {
     onSuccess: () => void;

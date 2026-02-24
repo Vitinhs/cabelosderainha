@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../services/supabaseClient';
-import { NotificationService } from '../src/services/notificationService';
-import { Button, Badge, Card } from '../src/components/ui';
-import { LoadingState, ErrorState } from '../src/components/ui/states';
+import { supabase } from '@/services/supabaseClient';
+import { NotificationService } from '@/services/notificationService';
+import { Button, Badge, Card } from '@/components/ui';
+import { LoadingState, ErrorState } from '@/components/ui/states';
+
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface ProfileViewProps {
@@ -159,7 +160,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             </header>
 
             {/* ── Perfil card ── */}
-            <Card variant="flat" className="flex flex-col items-center md:flex-row gap-5">
+            <Card className="flex flex-col items-center md:flex-row gap-5 p-6 bg-white/50 border-none shadow-sm">
                 {/* Avatar */}
                 <div
                     className="w-20 h-20 flex items-center justify-center text-3xl font-bold flex-shrink-0"
@@ -201,7 +202,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     Preferências do App
                 </p>
 
-                <Card variant="flat" className="p-0 overflow-hidden">
+                <Card className="p-0 overflow-hidden bg-white/50 border-none shadow-sm">
                     {/* Notificações */}
                     <SettingRow
                         icon="🔔"

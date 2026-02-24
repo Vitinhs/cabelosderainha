@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HairPlan } from '../types';
-import { fastHairTip } from '../services/geminiService';
-import { Button, Badge } from '../src/components/ui';
+import { HairPlan } from '@/types';
+import { fastHairTip } from '@/services/geminiService';
+import { Button, Badge } from '@/components/ui';
 
 interface HomeViewProps {
   hairPlan: HairPlan | null;
@@ -75,7 +75,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
           {!hairPlan ? (
             <Button
               variant="secondary"
-              size="md"
+              size="default"
               onClick={onStartDiagnosis}
               style={{
                 background: 'white',
@@ -167,7 +167,8 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
           {QUICK_PROBLEMS.map((p) => {
             const isSelected = selectedProblem === p.label;
             return (
-              <button
+              <Button
+                size="default"
                 key={p.label}
                 onClick={() => handleGetTip(p.label)}
                 disabled={isLoadingTip}
@@ -181,7 +182,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
               >
                 <span>{p.icon}</span>
                 <span>{p.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>

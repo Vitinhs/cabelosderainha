@@ -1,7 +1,7 @@
 import React from 'react';
-import { Card } from '../Card';
-import { Badge } from '../Badge';
-import { Button } from '../Button';
+import { Card } from '../card';
+import { Badge } from '../badge';
+import { Button } from '../button';
 
 interface ErrorStateProps {
     /** Título exibido no card de erro. Default: 'Algo deu errado' */
@@ -30,7 +30,6 @@ export function ErrorState({
 }: ErrorStateProps) {
     return (
         <Card
-            variant="flat"
             className={`py-10 flex flex-col items-center text-center space-y-5 ${className}`}
         // Override Card border to use error token
         >
@@ -88,7 +87,7 @@ export function ErrorState({
                     <div style={{ width: '100%', maxWidth: '16rem' }}>
                         <Button
                             variant="secondary"
-                            size="md"
+                            size="default"
                             onClick={onRetry}
                             style={{
                                 borderColor: 'var(--color-status-error-text)',

@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HairPlan, DayTask } from '../types';
-import { Button, Badge, Card } from '../src/components/ui';
-import { LoadingState, EmptyState, ErrorState } from '../src/components/ui/states';
+import { HairPlan, DayTask } from '@/types';
+import { Button, Badge, Card } from '@/components/ui';
+import { LoadingState, EmptyState, ErrorState } from '@/components/ui/states';
+
 
 interface ScheduleViewProps {
   plan?: HairPlan | null;
@@ -108,7 +108,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
       </header>
 
       {/* ── Progress summary ── */}
-      <Card variant="flat" className="space-y-3">
+      <Card className="p-4 space-y-3 bg-white/50 border-none shadow-sm">
         <div className="flex justify-between items-center">
           <p className="text-label">Progresso Geral</p>
           <Badge variant={progressPercent === 100 ? 'success' : 'brand'}>
@@ -339,7 +339,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
 
                 {/* Recipe block */}
                 {selectedTask.recipe && (
-                  <Card variant="brand" className="space-y-3">
+                  <Card className="p-4 space-y-3 bg-primary/5 border-primary/20">
                     <div className="flex items-center gap-2">
                       <span className="text-lg" role="img" aria-label="Receita">🥣</span>
                       <p
@@ -368,7 +368,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
 
               {/* CTA */}
               <Button
-                variant={selectedTask.completed ? 'secondary' : 'primary'}
+                variant={selectedTask.completed ? 'secondary' : 'default'}
                 size="lg"
                 onClick={() => {
                   onToggleTask(selectedTask.day);
