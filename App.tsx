@@ -160,40 +160,34 @@ const App: React.FC = () => {
 
     try {
       const answers = diagnosisData.answers;
-      const diagnosis: HairDiagnosis = {
-        hairType: (answers.tipo as any) || HairType.STRAIGHT,
-        scalpType: ScalpType.NORMAL,
-        porosity: 'Média',
-        hasChemicals: answers.quimica !== 'Nenhuma',
-        frequencyOfWash: '3x por semana',
-        mainGoal: (answers.resultado?.includes('queda') ? MainGoal.STRENGTH :
-          answers.resultado?.includes('crescer') ? MainGoal.GROWTH :
-            answers.resultado?.includes('Hidratação') ? MainGoal.HYDRATION :
-              answers.resultado?.includes('danos') ? MainGoal.DAMAGE_REPAIR :
-                MainGoal.HYDRATION),
-        budgetLevel: 'Baixo (Caseiro)'
+
+      // Mapeamento robusto das respostas do quiz para o objeto de diagnóstico
+      const diagnosis = {
+        hairType: (answers.tipo as string) || "Liso",
+        problems: answers.problema ? [answers.problema] : [],
+        goals: answers.resultado ? [answers.resultado] : [],
+        currentRoutine: answers.tempo ? `Problema há ${answers.tempo}` : "Não informada",
+        mainGoal: (answers.resultado || "Hidratação") as any
       };
 
-      console.log("Calling generateHairPlan with diagnosis:", diagnosis);
+      console.log("Chamando API com diagnóstico:", diagnosis);
 
-      // Timeout de 30 segundos para a IA
+      // Timeout de 45 segundos para a IA (Gemini pode levar um tempo)
       const planPromise = generateHairPlan(diagnosis);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 30000)
+        setTimeout(() => reject(new Error("A IA demorou muito para responder. Verifique sua conexão ou tente novamente.")), 45000)
       );
 
       const plan = await Promise.race([planPromise, timeoutPromise]) as HairPlan;
-      console.log("Hair plan received:", plan);
+      console.log("Plano recebido com sucesso:", plan);
 
-      if (!plan || !plan.tasks) {
-        throw new Error("O plano veio vazio. Tente refazer o quiz.");
+      if (!plan || !plan.tasks || plan.tasks.length === 0) {
+        throw new Error("Não foi possível gerar as tarefas do cronograma. Tente refazer o quiz.");
       }
 
       setHairPlan(plan);
 
-      // Persistir no Supabase se logado
       if (session?.user) {
-        console.log("User logged in. Persisting plan to database...");
         const { error } = await supabase.from('hair_plans').insert([{
           user_id: session.user.id,
           diagnosis: diagnosis,
@@ -201,11 +195,10 @@ const App: React.FC = () => {
           summary: plan.summary
         }]);
         if (error) console.error("Erro ao salvar plano no banco:", error);
-        else console.log("Plan saved to database.");
       }
     } catch (error: any) {
-      console.error("Error in handleGeneratePlan:", error);
-      setLastError(error.message);
+      console.error("Erro detalhado em handleGeneratePlan:", error);
+      setLastError(error.message || "Ocorreu um erro inesperado ao gerar seu plano.");
     } finally {
       setIsLoading(false);
     }

@@ -17,16 +17,24 @@ export const generateHairPlan = async (diagnosis: any): Promise<any> => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         hairType: diagnosis.hairType,
-        problems: [diagnosis.mainGoal], // Mapeando para o campo esperado pela nova API
-        goals: [diagnosis.mainGoal],
+        problems: diagnosis.problems || [diagnosis.mainGoal],
+        goals: diagnosis.goals || [diagnosis.mainGoal],
         currentRoutine: diagnosis.currentRoutine || "Não informada"
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Erro ao gerar diagnóstico");
+      const errorText = await response.text();
+      let errorMessage = "Erro na API de diagnóstico";
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        errorMessage = `Erro ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
+
 
     const data = await response.json();
 

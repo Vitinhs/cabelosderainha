@@ -73,7 +73,11 @@ Retorne APENAS o JSON.
             const result = JSON.parse(cleanJson);
             return res.status(200).json(result);
         } catch (parseError) {
-            return res.status(500).json({ error: "Erro ao gerar diagnóstico" });
+            console.error("Erro ao parsear JSON do Gemini:", responseText);
+            return res.status(502).json({
+                error: "Resposta da IA inválida",
+                details: responseText.substring(0, 200)
+            });
         }
 
     } catch (error) {
