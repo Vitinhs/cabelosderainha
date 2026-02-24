@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSubscription } from '../subscription/useSubscription';
 import { SubscriptionPlan } from '../subscription/SubscriptionContext';
-import { EmptyState } from '../../components/ui/states/EmptyState';
+import { EmptyState } from '@/components/ui/states';
 
 // ─── Plan hierarchy ───────────────────────────────────────────────────────────
 

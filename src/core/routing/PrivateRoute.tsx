@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../auth/useAuth';
-import { LoadingState } from '../../components/ui/states/LoadingState';
+import { LoadingState } from '@/components/ui/states';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
