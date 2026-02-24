@@ -47,15 +47,28 @@ export const generateHairPlan = async (diagnosis: HairDiagnosis): Promise<HairPl
 /**
  * Chat com assistente via Edge Function (Mocked or Todo).
  */
-export const chatWithAssistant = async (message: string, _history: any[]) => {
-  // Para fins de MVP, podemos manter simplificado ou mover para outra função
-  console.log("Chat mockado via Edge Function logic:", message);
-  return "Olá! Sou o Assistente Cabelos de Rainha. Em breve estarei integrado 100% via funções seguras.";
+export const chatWithAssistant = async (message: string, history: any[]) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('chat-with-assistant', {
+      body: { message, history },
+    });
+    if (error) throw error;
+    return data.response;
+  } catch (error: any) {
+    console.error("Erro no chat:", error);
+    return "Desculpe, tive um problema ao processar sua mensagem. Pode repetir?";
+  }
 };
 
-/**
- * Dica rápida via Edge Function (Mocked or Todo).
- */
-export const fastHairTip = async (problem: string, _diagnosis?: HairDiagnosis) => {
-  return `Dica para ${problem}: Tente usar babosa natural congelada para acalmar o couro cabeludo.`;
+export const fastHairTip = async (problem: string, diagnosis?: HairDiagnosis) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('fast-hair-tip', {
+      body: { problem, diagnosis },
+    });
+    if (error) throw error;
+    return data.tip;
+  } catch (error: any) {
+    console.error("Erro ao buscar dica rápida:", error);
+    return "Use um pouco de óleo de coco para selar as cutículas.";
+  }
 };

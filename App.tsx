@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Layout from './components/Layout';
 import { HairPlan, HairDiagnosis, QuizAnswers, HairType, ScalpType, MainGoal } from './types';
 import { generateHairPlan } from './services/geminiService';
@@ -206,63 +207,145 @@ const App: React.FC = () => {
     }
   };
 
+  const handleToggleTask = async (day: number) => {
+    setHairPlan(prev => {
+      if (!prev) return prev;
+
+      const updatedTasks = prev.tasks.map(t =>
+        t.day === day ? { ...t, completed: !t.completed } : t
+      );
+
+      const updatedPlan = { ...prev, tasks: updatedTasks };
+
+      // Persistir no banco se usuário estiver logado
+      if (session?.user) {
+        console.log(`Updating task for day ${day} in database...`);
+        supabase
+          .from('hair_plans')
+          .update({ tasks: updatedTasks })
+          .eq('user_id', session.user.id)
+          .then(({ error }) => {
+            if (error) console.error("Erro ao atualizar tarefa no banco:", error);
+          });
+      }
+
+      return updatedPlan;
+    });
+  };
+
   useEffect(() => {
     if (phase === 'result' && diagnosisData && !hairPlan && !isLoading) {
       handleGeneratePlan();
     }
   }, [phase, diagnosisData]);
 
-  const renderContent = () => {
+
+  const renderPhase = () => {
     if (isLoading) {
       return (
-        <div className="h-screen bg-[#fcfbf7] flex flex-col items-center justify-center space-y-6 text-center p-6">
+        <motion.div
+          key="loading"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="h-screen bg-[#fcfbf7] flex flex-col items-center justify-center space-y-6 text-center p-6"
+        >
           <div className="w-16 h-16 border-4 border-[#2d4a22] border-t-transparent rounded-full animate-spin"></div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-[#2d4a22] font-serif italic">Criando seu cronograma...</h2>
             <p className="text-sm text-gray-500 max-w-xs">Nossa IA está analisando seus fios para construir a melhor rotina 100% natural.</p>
           </div>
-        </div>
+        </motion.div>
       );
     }
 
     if (lastError) {
       return (
-        <div className="h-screen flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <motion.div
+          key="error"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="h-screen flex flex-col items-center justify-center p-6 text-center space-y-4"
+        >
           <h2 className="text-xl font-bold">Ops! Algo deu errado</h2>
           <p className="text-sm text-gray-500">{lastError}</p>
           <button onClick={() => setLastError(null)} className="px-6 py-2 bg-[#2d4a22] text-white rounded-full">Tentar Novamente</button>
-        </div>
+        </motion.div>
       );
     }
 
-    if (phase === 'landing') return <LandingPage onStartQuiz={() => setPhase('quiz')} />;
-    if (phase === 'quiz') return <LandingQuiz onFinish={handleQuizFinish} />;
-    if (phase === 'result') return (
-      <ResultView
-        diagnosisText={hairPlan?.summary || "Analisando seus fios..."}
-        initialPlan={hairPlan?.tasks.slice(0, 3).map(t => t.title) || ["Carregando plano..."]}
-        onSubscribe={() => setPhase('subscription')}
-      />
-    );
-    if (phase === 'subscription') return (
-      <SubscriptionView
-        onSuccess={() => { setPhase('app'); setActiveTab('dashboard'); }}
-        onCancel={() => setPhase('app')}
-      />
-    );
-
-    // Main App Phase
-    if (!session) return <AuthView onSuccess={() => { }} />;
-
-    return (
-      <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
-        {activeTab === 'home' && <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />}
-        {activeTab === 'dashboard' && <DashboardView hairPlan={hairPlan} clienteId={diagnosisData?.clientId || null} />}
-        {activeTab === 'schedule' && (hairPlan ? <ScheduleView plan={hairPlan} onToggleTask={() => { }} /> : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />)}
-        {activeTab === 'chat' && <ChatView />}
-        {activeTab === 'profile' && <ProfileView session={session} />}
-      </Layout>
-    );
+    switch (phase) {
+      case 'landing':
+        return <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><LandingPage onStartQuiz={() => setPhase('quiz')} /></motion.div>;
+      case 'quiz':
+        return <motion.div key="quiz" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}><LandingQuiz onFinish={handleQuizFinish} /></motion.div>;
+      case 'result':
+        return (
+          <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <ResultView
+              diagnosisText={hairPlan?.summary || "Analisando seus fios..."}
+              initialPlan={hairPlan?.tasks.slice(0, 3).map(t => t.title) || ["Carregando plano..."]}
+              onSubscribe={() => setPhase('subscription')}
+            />
+          </motion.div>
+        );
+      case 'subscription':
+        return (
+          <motion.div key="subscription" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
+            <SubscriptionView
+              userId={session?.user?.id}
+              onSuccess={() => { setPhase('app'); setActiveTab('dashboard'); }}
+              onCancel={() => setPhase('app')}
+            />
+          </motion.div>
+        );
+      default:
+        if (!session) return <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><AuthView onSuccess={() => { }} /></motion.div>;
+        return (
+          <motion.div
+            key="app"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          >
+            <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+              <AnimatePresence mode="wait">
+                {activeTab === 'home' && (
+                  <motion.div key="home" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />
+                  </motion.div>
+                )}
+                {activeTab === 'dashboard' && (
+                  <motion.div key="dashboard" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <DashboardView
+                      hairPlan={hairPlan}
+                      clienteId={diagnosisData?.clientId || null}
+                      userId={session?.user?.id}
+                      onToggleTask={handleToggleTask}
+                      isSubscriber={isSubscriber}
+                    />
+                  </motion.div>
+                )}
+                {activeTab === 'schedule' && (
+                  <motion.div key="schedule" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    {hairPlan ? <ScheduleView plan={hairPlan} onToggleTask={handleToggleTask} /> : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />}
+                  </motion.div>
+                )}
+                {activeTab === 'chat' && (
+                  <motion.div key="chat" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <ChatView />
+                  </motion.div>
+                )}
+                {activeTab === 'profile' && (
+                  <motion.div key="profile" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <ProfileView session={session} isSubscriber={isSubscriber} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Layout>
+          </motion.div>
+        );
+    }
   };
 
   if (isAuthLoading && !diagnosisData) {
@@ -273,7 +356,11 @@ const App: React.FC = () => {
     );
   }
 
-  return renderContent();
+  return (
+    <AnimatePresence mode="wait">
+      {renderPhase()}
+    </AnimatePresence>
+  );
 };
 
 export default App;
