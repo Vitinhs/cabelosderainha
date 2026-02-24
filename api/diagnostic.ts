@@ -2,67 +2,17 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callGemini } from '../src/server/ai/gemini';
 
 /**
- * Interface para as respostas do quiz recebidas do frontend.
+ * Interface para os dados do usuário recebidos via POST.
  */
-interface QuizAnswers {
-    nome: string;
-    email: string;
+interface DiagnosticRequest {
     hairType: string;
-    scalpType: string;
-    porosity: string;
-    hasChemicals: boolean;
     problems: string[];
     goals: string[];
-    budgetLevel: string;
-    frequencyOfWash: string;
-}
-
-/**
- * Monta o prompt para o Gemini.
- */
-function buildPrompt(answers: QuizAnswers): string {
-    return `
-Você é um especialista em tricologia e beleza capilar especializado em cronogramas personalizados.
-Com base nas respostas do quiz abaixo, gere um diagnóstico completo e um plano de cuidados.
-
-### PERFIL DO CABELO
-- Tipo: ${answers.hairType}
-- Couro Cabeludo: ${answers.scalpType}
-- Porosidade: ${answers.porosity}
-- Possui Química: ${answers.hasChemicals ? 'Sim' : 'Não'}
-- Orçamento: ${answers.budgetLevel}
-- Frequência de Lavagem: ${answers.frequencyOfWash}
-
-### PROBLEMAS RELATADOS
-${answers.problems.join(', ')}
-
-### OBJETIVOS
-${answers.goals.join(', ')}
-
-### INSTRUÇÕES DE RESPOSTA
-Retorne a resposta EXCLUSIVAMENTE em formato JSON estruturado, sem blocos de código markdown, seguindo este modelo:
-{
-  "diagnostic": "Um parágrafo detalhando o estado atual e necessidades do cabelo.",
-  "philosophy": "Uma frase curta que resume a abordagem de cuidado recomendada.",
-  "expressTips": ["Dica 1", "Dica 2", "Dica 3"],
-  "schedule": {
-    "week1": ["Atividade 1", "Atividade 2", "Atividade 3"],
-    "week2": ["Atividade 1", "Atividade 2", "Atividade 3"],
-    "week3": ["Atividade 1", "Atividade 2", "Atividade 3"],
-    "week4": ["Atividade 1", "Atividade 2", "Atividade 3"]
-  },
-  "calendar": [
-    { "day": 1, "task": "Tipo de tratamento", "description": "Detalhes" },
-    ... até o dia 28 ou 30
-  ]
-}
-
-Garanta que o cronograma respeite a frequência de lavagem e o orçamento informado. Use termos técnicos mas acessíveis.
-`.trim();
+    currentRoutine?: string;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // CORS
+    // CORS configuration
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -72,39 +22,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método não permitido. Use POST.' });
+        return res.status(405).json({ error: "Method not allowed" });
     }
 
     try {
-        const answers = req.body as QuizAnswers;
+        const { hairType, problems, goals, currentRoutine } = req.body as DiagnosticRequest;
 
-        if (!answers || !answers.hairType) {
-            return res.status(400).json({ error: 'Respostas do quiz não fornecidas ou incompletas.' });
+        if (!hairType || !problems || !goals) {
+            return res.status(400).json({ error: "Dados incompletos para o diagnóstico" });
         }
 
-        const prompt = buildPrompt(answers);
-        const resultText = await callGemini(prompt);
+        const prompt = `
+Você é um especialista tricologista.
 
-        // Tenta limpar possíveis marcações de markdown do Gemini
-        const cleanJson = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+Com base nos dados abaixo, gere:
+1. Diagnóstico detalhado
+2. Cronograma capilar personalizado de 4 semanas (hidratação, nutrição, reconstrução)
+3. 5 dicas express personalizadas
+4. Uma filosofia capilar motivacional personalizada
 
-        let parsedResult;
-        try {
-            parsedResult = JSON.parse(cleanJson);
-        } catch (e) {
-            console.error('Falha ao parsear JSON da IA:', resultText);
-            return res.status(502).json({
-                error: 'A IA gerou uma resposta inválida.',
-                raw: resultText
-            });
-        }
+Dados do usuário:
+Tipo de cabelo: ${hairType}
+Problemas: ${problems.join(', ')}
+Objetivos: ${goals.join(', ')}
+Rotina atual: ${currentRoutine || 'Não informado'}
 
-        return res.status(200).json(parsedResult);
-    } catch (error: any) {
-        console.error('Erro na rota de diagnóstico:', error);
-        return res.status(500).json({
-            error: 'Erro interno ao processar o diagnóstico.',
-            message: error.message
-        });
+Formato de resposta OBRIGATÓRIO em JSON válido (sem markdown, apenas o objeto):
+
+{
+  "diagnosis": "...",
+  "schedule": [
+    { "week": 1, "steps": ["Hidratação", "Nutrição", "Hidratação"] },
+    { "week": 2, "steps": ["Hidratação", "Nutrição", "Reconstrução"] },
+    { "week": 3, "steps": ["Hidratação", "Hidratação", "Nutrição"] },
+    { "week": 4, "steps": ["Hidratação", "Nutrição", "Hidratação"] }
+  ],
+  "expressTips": ["Dica 1", "Dica 2", "Dica 3", "Dica 4", "Dica 5"],
+  "philosophy": "..."
+}
+`.trim();
+
+        const responseText = await callGemini(prompt);
+
+        // Limpeza de possíveis marações markdown (backticks) do Gemini
+        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        const result = JSON.parse(cleanJson);
+        return res.status(200).json(result);
+
+    } catch (error) {
+        return res.status(500).json({ error: "Erro ao gerar diagnóstico" });
     }
 }
