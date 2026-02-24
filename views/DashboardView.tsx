@@ -1,11 +1,9 @@
-
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HairPlan, DayTask, MainGoal } from '../types';
-import { supabase } from '../services/supabaseClient';
 import { Button, Badge } from '../src/components/ui';
+import { LoadingState, EmptyState, ErrorState } from '../src/components/ui/states';
 import EvolutionGallery from '../src/components/EvolutionGallery';
-import { useState } from 'react';
 
 interface DashboardViewProps {
     hairPlan: HairPlan | null;
@@ -13,6 +11,9 @@ interface DashboardViewProps {
     userId?: string;
     onToggleTask: (day: number) => void;
     isSubscriber?: boolean;
+    loading?: boolean;
+    error?: string | null;
+    onRetry?: () => void;
 }
 
 /* ── Smart Tip Sub-component ── */
@@ -39,7 +40,7 @@ const SmartTip: React.FC<{ goal?: MainGoal }> = ({ goal }) => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="card-flat flex items-start gap-3"
-            style={{ background: 'var(--color-status-warn-bg)', borderColor: 'rgba(217,119,6,0.15)' }}
+            style={{ background: 'var(--color-status-warn-bg)', borderColor: 'var(--color-border-default)' }}
         >
             <span className="text-xl">💡</span>
             <div>
@@ -90,67 +91,12 @@ const ConsistencyChart: React.FC<{ tasks: DayTask[] }> = ({ tasks }) => {
     );
 };
 
-/* ── Video VIP Sub-component ── */
-const VideoVIPSection: React.FC<{ clienteId: string | null }> = ({ clienteId }) => {
-    const [videoUrl, setVideoUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
-    const handleGerarVideo = async () => {
-        if (!clienteId) { setError('ID do cliente não encontrado. Tente recarregar.'); return; }
-        setLoading(true);
-        setError(null);
-        try {
-            const { data, error: fnError } = await supabase.functions.invoke('vip-video', {
-                body: { clienteId, script: 'Tutorial VIP de cronograma capilar' },
-            });
-            if (fnError) throw fnError;
-            if (data?.error) throw new Error(data.message || data.error);
-            setVideoUrl(data.videoUrl);
-        } catch (err: any) {
-            setError(err.message || 'Falha ao gerar vídeo.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="space-y-4">
-            {videoUrl ? (
-                <div className="rounded-2xl overflow-hidden aspect-video bg-black shadow-lg">
-                    <video src={videoUrl} controls className="w-full h-full" autoPlay />
-                </div>
-            ) : (
-                <div
-                    className="p-6 rounded-2xl border border-dashed text-center space-y-3"
-                    style={{
-                        background: 'var(--color-surface-brand)',
-                        borderColor: 'var(--color-border-brand)',
-                    }}
-                >
-                    <div className="text-4xl">🎬</div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--color-text-brand)' }}>
-                        Seu conteúdo personalizado
-                    </p>
-                    <p className="text-label">Clique abaixo para gerar seu vídeo exclusivo com IA.</p>
-                </div>
-            )}
-            {error && (
-                <p className="text-xs px-2 italic" style={{ color: 'var(--color-status-error-text)' }}>
-                    ⚠️ {error}
-                </p>
-            )}
-            <Button variant="primary" loading={loading} onClick={handleGerarVideo}>
-                {videoUrl ? 'Gerar Outro Vídeo' : 'Gerar Meu Vídeo VIP'}
-            </Button>
-            <p className="text-label text-center">Usuários Premium têm gerações ilimitadas.</p>
-        </div>
-    );
-};
 
 /* ── Main Dashboard View ── */
 const DashboardView: React.FC<DashboardViewProps> = ({
     hairPlan, clienteId, userId, onToggleTask, isSubscriber,
+    loading = false, error = null, onRetry,
 }) => {
     const completedCount = hairPlan?.tasks.filter((t) => t.completed).length || 0;
     const progress = hairPlan?.tasks.length
@@ -164,6 +110,28 @@ const DashboardView: React.FC<DashboardViewProps> = ({
         const startIdx = Math.max(0, firstIncompleteIdx - 1);
         return hairPlan.tasks.slice(startIdx, startIdx + 3);
     }, [hairPlan?.tasks]);
+
+    /* ── Guard states ── */
+    if (loading) {
+        return (
+            <div className="py-6 space-y-6 pb-28">
+                <LoadingState showAvatar lines={3} label="Carregando seu portal..." />
+                <LoadingState lines={5} />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="py-6 pb-28">
+                <ErrorState
+                    title="Erro ao carregar dashboard"
+                    message={error}
+                    onRetry={onRetry}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="py-6 space-y-6 pb-28" style={{ background: 'var(--color-surface-bg)' }}>
@@ -261,13 +229,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                                 </motion.div>
                             ))
                         ) : (
-                            <div className="text-center py-8 space-y-2">
-                                <div className="text-3xl">✨</div>
-                                <p className="text-sm font-bold" style={{ color: 'var(--color-text-brand)' }}>
-                                    Tudo pronto por hoje!
-                                </p>
-                                <p className="text-label">Você está cada dia mais radiante.</p>
-                            </div>
+                            <EmptyState
+                                icon="✨"
+                                title="Tudo pronto por hoje!"
+                                description="Você está cada dia mais radiante. Amanhã tem mais rituais esperando."
+                                className="py-6"
+                            />
                         )}
                     </AnimatePresence>
                 </div>
@@ -280,41 +247,26 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 </section>
             )}
 
-            {/* ── Vídeo VIP ── */}
-            <section className="card space-y-5" style={{ cursor: 'default' }}>
-                <div
-                    className="flex justify-between items-center pb-4"
-                    style={{ borderBottom: '1px solid var(--color-border-subtle)' }}
-                >
-                    <div className="flex items-center gap-2">
-                        <span
-                            className="p-2 rounded-xl text-lg"
-                            style={{ background: 'var(--color-surface-subtle)' }}
-                        >
-                            🎥
-                        </span>
-                        <h3 className="text-card-title">Sua Aula Customizada</h3>
-                    </div>
-                    <Badge variant="premium">Premium</Badge>
-                </div>
-                <VideoVIPSection clienteId={clienteId} />
-            </section>
 
             {/* ── Support ── */}
             <div className="card-brand text-center space-y-4">
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>
+                <p
+                    className="text-sm"
+                    style={{ color: 'var(--color-text-onBrand)', opacity: 0.8 }}
+                >
                     Dúvidas sobre sua rotina?
                 </p>
-                <button
-                    className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                <Button
+                    variant="secondary"
                     style={{
-                        background: 'rgba(255,255,255,0.12)',
-                        color: 'white',
-                        border: '1px solid rgba(255,255,255,0.15)',
+                        background: 'transparent',
+                        color: 'var(--color-text-onBrand)',
+                        border: '1px solid var(--color-text-onBrand)',
+                        opacity: 0.9,
                     }}
                 >
                     Falar com Especialista
-                </button>
+                </Button>
             </div>
         </div>
     );

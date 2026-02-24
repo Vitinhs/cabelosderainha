@@ -14,8 +14,8 @@ interface SubscriptionViewProps {
 const PREMIUM_FEATURES = [
     { icon: '✨', text: 'Acesso ao Dashboard Interativo' },
     { icon: '📊', text: 'Histórico de Progresso & Badges' },
-    { icon: '🎬', text: 'Vídeo-aulas de Receitas Caseiras' },
-    { icon: '💬', text: 'Dicas semanais via WhatsApp' },
+    { icon: '💬', text: 'Chat com Consultora de Beleza IA' },
+    { icon: '🔔', text: 'Lembretes Inteligentes Personalizados' },
     { icon: '👩‍⚕️', text: 'Suporte VIP com Especialistas' },
 ];
 

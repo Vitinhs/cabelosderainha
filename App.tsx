@@ -16,6 +16,7 @@ import DashboardView from './views/DashboardView';
 import ProfileView from './views/ProfileView';
 import { supabase } from './services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import { PrivateRoute, PlanGuard } from './src/core/routing';
 
 type JourneyPhase = 'landing' | 'quiz' | 'result' | 'subscription' | 'app';
 
@@ -321,28 +322,46 @@ const App: React.FC = () => {
                 )}
                 {activeTab === 'dashboard' && (
                   <motion.div key="dashboard" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
-                    <DashboardView
-                      hairPlan={hairPlan}
-                      clienteId={diagnosisData?.clientId || null}
-                      userId={session?.user?.id}
-                      onToggleTask={handleToggleTask}
-                      isSubscriber={isSubscriber}
-                    />
+                    <PrivateRoute onRedirect={() => setPhase('landing')}>
+                      <DashboardView
+                        hairPlan={hairPlan}
+                        clienteId={diagnosisData?.clientId || null}
+                        userId={session?.user?.id}
+                        onToggleTask={handleToggleTask}
+                        isSubscriber={isSubscriber}
+                      />
+                    </PrivateRoute>
                   </motion.div>
                 )}
                 {activeTab === 'schedule' && (
                   <motion.div key="schedule" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
-                    {hairPlan ? <ScheduleView plan={hairPlan} onToggleTask={handleToggleTask} /> : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />}
+                    <PrivateRoute onRedirect={() => setPhase('landing')}>
+                      {hairPlan
+                        ? <ScheduleView plan={hairPlan} onToggleTask={handleToggleTask} />
+                        : <HomeView hairPlan={hairPlan} onStartDiagnosis={() => setPhase('quiz')} />}
+                    </PrivateRoute>
                   </motion.div>
                 )}
                 {activeTab === 'chat' && (
                   <motion.div key="chat" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
-                    <ChatView />
+                    <PrivateRoute onRedirect={() => setPhase('landing')}>
+                      <PlanGuard
+                        requiredPlan="premium"
+                        upgradeTitle="Chat exclusivo Premium"
+                        upgradeDescription="Faça upgrade para conversar com nossa consultora de beleza com IA."
+                        upgradeActionLabel="Ver planos"
+                        onUpgrade={() => setPhase('subscription')}
+                      >
+                        <ChatView />
+                      </PlanGuard>
+                    </PrivateRoute>
                   </motion.div>
                 )}
                 {activeTab === 'profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
-                    <ProfileView session={session} isSubscriber={isSubscriber} />
+                    <PrivateRoute onRedirect={() => setPhase('landing')}>
+                      <ProfileView session={session} isSubscriber={isSubscriber} />
+                    </PrivateRoute>
                   </motion.div>
                 )}
               </AnimatePresence>
