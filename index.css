@@ -9,6 +9,8 @@
    1. SEMANTIC TOKEN SYSTEM — @theme
    Todos os componentes DEVEM usar apenas esses tokens.
    Nunca usar valores raw como #2d4a22, gray-500 etc.
+   NOTA: @theme é sintaxe válida do Tailwind CSS v4.
+   O aviso do IDE é um falso positivo (stylelint não conhece Tailwind v4).
    ============================================================ */
 @theme {
     /* --- BRAND PALETTE (base, não usar diretamente) --- */
@@ -365,7 +367,10 @@
         font-family: var(--font-family-sans);
         transition: all var(--duration-fast) var(--ease-smooth);
         outline: none;
+        appearance: none;
+        /* standard — compatibility */
         -webkit-appearance: none;
+        /* webkit prefix */
     }
 
     .input::placeholder {
