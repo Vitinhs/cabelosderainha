@@ -47,7 +47,7 @@ Problemas: ${problems.join(', ')}
 Objetivos: ${goals.join(', ')}
 Rotina atual: ${currentRoutine || 'Não informado'}
 
-Formato de resposta OBRIGATÓRIO em JSON válido (sem markdown, apenas o objeto):
+Formato de resposta OBRIGATÓRIO em JSON válido:
 
 {
   "diagnosis": "...",
@@ -60,15 +60,21 @@ Formato de resposta OBRIGATÓRIO em JSON válido (sem markdown, apenas o objeto)
   "expressTips": ["Dica 1", "Dica 2", "Dica 3", "Dica 4", "Dica 5"],
   "philosophy": "..."
 }
+
+Retorne APENAS o JSON.
 `.trim();
 
         const responseText = await callGemini(prompt);
 
-        // Limpeza de possíveis marações markdown (backticks) do Gemini
+        // Limpeza de possíveis marcações markdown (backticks) do Gemini
         const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        const result = JSON.parse(cleanJson);
-        return res.status(200).json(result);
+        try {
+            const result = JSON.parse(cleanJson);
+            return res.status(200).json(result);
+        } catch (parseError) {
+            return res.status(500).json({ error: "Erro ao gerar diagnóstico" });
+        }
 
     } catch (error) {
         return res.status(500).json({ error: "Erro ao gerar diagnóstico" });
