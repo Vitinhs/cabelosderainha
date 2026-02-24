@@ -18,7 +18,7 @@ import ProfileView from '@/views/ProfileView';
 import { supabase } from '@/services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 import { PrivateRoute, PlanGuard } from '@/core/routing';
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui";
 
 import { toast } from "sonner";
 

@@ -2,9 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/services/supabaseClient";
 import { QuizAnswers } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button, Input, Card, CardContent } from "@/components/ui";
 import { CheckCircle2, ArrowRight, Lock } from "lucide-react";
 
 const questions = [

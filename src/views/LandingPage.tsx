@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button, Card, CardContent } from "@/components/ui";
 import { Sparkles, Leaf, Bot, Wallet, ChevronRight } from "lucide-react";
 
 interface LandingPageProps {
