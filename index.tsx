@@ -4,6 +4,7 @@ import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 import { AuthProvider } from './src/core/auth/AuthContext';
 import { SubscriptionProvider } from './src/core/subscription/SubscriptionContext';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import './index.css';
 
 // Registra o Service Worker para suporte PWA
@@ -25,6 +26,7 @@ root.render(
     <AuthProvider>
       <SubscriptionProvider>
         <App />
+        <SpeedInsights />
       </SubscriptionProvider>
     </AuthProvider>
   </React.StrictMode>
