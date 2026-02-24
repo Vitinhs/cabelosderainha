@@ -1,17 +1,23 @@
+
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
+import { Button } from '../src/components/ui/Button';
+import { Input } from '../src/components/ui/Input';
 
 interface AuthViewProps {
     onSuccess: () => void;
 }
 
+type AuthMode = 'login' | 'register';
+
 const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
-    const [isLogin, setIsLogin] = useState(true);
+    const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,117 +25,158 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         setMessage(null);
 
         try {
-            if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
+            if (mode === 'login') {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 onSuccess();
             } else {
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                        },
-                    },
+                    options: { data: { full_name: fullName } },
                 });
                 if (error) throw error;
-                setMessage({ type: 'success', text: 'Cadastro realizado! Verifique seu email ou faça login.' });
-                setIsLogin(true);
+                setMessage({ type: 'success', text: 'Conta criada! Verifique seu e-mail ou entre diretamente.' });
+                setMode('login');
             }
         } catch (error: any) {
-            setMessage({ type: 'error', text: error.message || 'Ocorreu um erro.' });
+            setMessage({ type: 'error', text: error.message || 'Ocorreu um erro. Tente novamente.' });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-[#fcfbf7]">
-            <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-[#2d4a22] mb-2">Cabelos de Rainha</h1>
-                    <p className="text-gray-500 italic">Sua jornada para um cabelo natural e saudável</p>
+        <div
+            className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
+            style={{ background: 'var(--color-surface-bg)' }}
+        >
+            {/* Glow decorativo */}
+            <div
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl opacity-20 pointer-events-none"
+                style={{ background: 'var(--color-action-primary)' }}
+            />
+
+            <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                className="w-full max-w-sm relative"
+            >
+                {/* Logo + Brand */}
+                <div className="text-center mb-10">
+                    <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-md"
+                        style={{ background: 'var(--color-surface-brand)' }}
+                    >
+                        🌿
+                    </div>
+                    <h1 className="text-section-title mb-1">Cabelos de Rainha</h1>
+                    <p className="text-label">Cronograma Capilar Inteligente</p>
                 </div>
 
-                <div className="mt-8">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                        {isLogin ? 'Bem-vinda de volta' : 'Comece sua jornada'}
-                    </h2>
+                {/* Tabs de modo */}
+                <div
+                    className="flex rounded-lg p-1 mb-8"
+                    style={{ background: 'var(--color-surface-subtle)' }}
+                >
+                    {(['login', 'register'] as AuthMode[]).map((m) => (
+                        <button
+                            key={m}
+                            onClick={() => { setMode(m); setMessage(null); }}
+                            className="flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-200"
+                            style={{
+                                background: mode === m ? 'var(--color-surface-card)' : 'transparent',
+                                color: mode === m ? 'var(--color-text-brand)' : 'var(--color-text-muted)',
+                                boxShadow: mode === m ? 'var(--shadow-card)' : 'none',
+                            }}
+                        >
+                            {m === 'login' ? 'Entrar' : 'Criar Conta'}
+                        </button>
+                    ))}
+                </div>
 
-                    <form onSubmit={handleAuth} className="space-y-4">
-                        {!isLogin && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                                <input
+                {/* Formulário */}
+                <form onSubmit={handleAuth} className="space-y-4">
+                    <AnimatePresence mode="wait">
+                        {mode === 'register' && (
+                            <motion.div
+                                key="name-field"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <Input
+                                    label="Seu Nome"
                                     type="text"
-                                    required
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#2d4a22] focus:border-transparent outline-none transition-all"
-                                    placeholder="Seu nome"
+                                    placeholder="Ex: Vitória Silva"
+                                    required={mode === 'register'}
+                                    autoComplete="name"
                                 />
-                            </div>
+                            </motion.div>
                         )}
+                    </AnimatePresence>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#2d4a22] focus:border-transparent outline-none transition-all"
-                                placeholder="seu@email.com"
-                            />
-                        </div>
+                    <Input
+                        label="E-mail"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        required
+                        autoComplete="email"
+                    />
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#2d4a22] focus:border-transparent outline-none transition-all"
-                                placeholder="••••••••"
-                            />
-                        </div>
+                    <Input
+                        label="Senha"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder={mode === 'register' ? 'Mínimo 6 caracteres' : '••••••••'}
+                        required
+                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    />
 
+                    {/* Mensagem de feedback */}
+                    <AnimatePresence>
                         {message && (
-                            <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                            <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                className="p-3 rounded-lg text-sm font-medium"
+                                style={{
+                                    background: message.type === 'success'
+                                        ? 'var(--color-status-success-bg)'
+                                        : 'var(--color-status-error-bg)',
+                                    color: message.type === 'success'
+                                        ? 'var(--color-status-success-text)'
+                                        : 'var(--color-status-error-text)',
+                                }}
+                            >
                                 {message.text}
-                            </div>
+                            </motion.div>
                         )}
+                    </AnimatePresence>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-4 bg-[#2d4a22] text-white rounded-xl font-bold text-lg hover:bg-[#1f3317] transition-colors shadow-lg shadow-emerald-900/10 disabled:opacity-50"
-                        >
-                            {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar Conta')}
-                        </button>
-                    </form>
+                    <Button type="submit" variant="primary" loading={loading} size="lg">
+                        {mode === 'login' ? 'Entrar na minha conta' : 'Criar minha conta grátis'}
+                    </Button>
+                </form>
 
-                    <div className="mt-6 text-center">
-                        <button
-                            onClick={() => setIsLogin(!isLogin)}
-                            className="text-sm font-medium text-[#2d4a22] hover:underline"
-                        >
-                            {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem uma conta? Entre agora'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="pt-8 border-t border-gray-100 text-center">
-                    <p className="text-[10px] text-gray-400">
-                        Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade.
-                    </p>
-                </div>
-            </div>
+                {/* Footer */}
+                <p
+                    className="text-center text-xs mt-8"
+                    style={{ color: 'var(--color-text-muted)' }}
+                >
+                    Ao continuar, você concorda com nossos{' '}
+                    <a href="#" style={{ color: 'var(--color-text-brand)' }}>Termos</a> e{' '}
+                    <a href="#" style={{ color: 'var(--color-text-brand)' }}>Privacidade</a>.
+                </p>
+            </motion.div>
         </div>
     );
 };
