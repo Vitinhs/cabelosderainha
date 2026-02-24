@@ -27,18 +27,28 @@ export async function callGemini(prompt: string): Promise<string> {
         });
 
         if (!response.ok) {
-            throw new Error("Gemini API error");
+            const errorBody = await response.text();
+            console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
+            throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
+
+        if (data.error) {
+            console.error("Gemini API error data:", data.error);
+            throw new Error(`Gemini API error: ${data.error.message || 'Unknown error'}`);
+        }
+
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!text) {
-            throw new Error("Gemini API error");
+            console.error("Gemini API returned no text:", data);
+            throw new Error("Gemini API returnou uma resposta vazia.");
         }
 
         return text.trim();
-    } catch (error) {
-        throw new Error("Gemini API error");
+    } catch (error: any) {
+        console.error("Catch block in callGemini:", error);
+        throw new Error(error.message || "Gemini API failure");
     }
 }

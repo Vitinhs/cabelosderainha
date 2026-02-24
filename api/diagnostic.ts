@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callGemini } from '../src/server/ai/gemini';
 
 /**
  * Interface para os dados do usuário recebidos via POST.
@@ -9,6 +8,30 @@ interface DiagnosticRequest {
     problems: string[];
     goals: string[];
     currentRoutine?: string;
+}
+
+/**
+ * Função interna para chamar o Gemini sem dependências externas.
+ */
+async function callGeminiInternal(prompt: string, apiKey: string): Promise<string> {
+    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini API Error:", errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -32,23 +55,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Dados incompletos para o diagnóstico" });
         }
 
-        const prompt = `
-Você é um especialista tricologista.
+        const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            console.error("ERRO: GEMINI_API_KEY não encontrada nas variáveis de ambiente.");
+            return res.status(500).json({
+                error: "Configuração ausente",
+                message: "A chave API (GEMINI_API_KEY) não foi configurada no servidor Vercel. Adicione-a nas configurações do projeto."
+            });
+        }
 
-Com base nos dados abaixo, gere:
-1. Diagnóstico detalhado
-2. Cronograma capilar personalizado de 4 semanas (hidratação, nutrição, reconstrução)
-3. 5 dicas express personalizadas
-4. Uma filosofia capilar motivacional personalizada
+        const prompt = `
+Você é um especialista tricologista (especialista em saúde capilar).
+Com base nos dados abaixo, crie um diagnóstico detalhado e um cronograma capilar de 4 semanas.
 
 Dados do usuário:
-Tipo de cabelo: ${hairType}
-Problemas: ${problems.join(', ')}
-Objetivos: ${goals.join(', ')}
-Rotina atual: ${currentRoutine || 'Não informado'}
+- Tipo: ${hairType}
+- Problemas: ${problems.join(', ')}
+- Objetivos: ${goals.join(', ')}
+- Rotina atual: ${currentRoutine || 'Não informado'}
 
-Formato de resposta OBRIGATÓRIO em JSON válido:
-
+RESPONDA APENAS EM JSON VÁLIDO (SEM TEXTO ANTES OU DEPOIS):
 {
   "diagnosis": "...",
   "schedule": [
@@ -60,27 +86,26 @@ Formato de resposta OBRIGATÓRIO em JSON válido:
   "expressTips": ["Dica 1", "Dica 2", "Dica 3", "Dica 4", "Dica 5"],
   "philosophy": "..."
 }
-
-Retorne APENAS o JSON.
 `.trim();
 
-        const responseText = await callGemini(prompt);
+        console.log("Chamando Gemini...");
+        const responseText = await callGeminiInternal(prompt, apiKey);
 
-        // Limpeza de possíveis marcações markdown (backticks) do Gemini
-        const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        try {
-            const result = JSON.parse(cleanJson);
-            return res.status(200).json(result);
-        } catch (parseError) {
-            console.error("Erro ao parsear JSON do Gemini:", responseText);
-            return res.status(502).json({
-                error: "Resposta da IA inválida",
-                details: responseText.substring(0, 200)
-            });
+        // Extrai JSON se houver lixo em volta
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error("A IA retornou uma resposta em formato inválido.");
         }
 
-    } catch (error) {
-        return res.status(500).json({ error: "Erro ao gerar diagnóstico" });
+        const result = JSON.parse(jsonMatch[0]);
+        console.log("Diagnóstico gerado com sucesso!");
+        return res.status(200).json(result);
+
+    } catch (error: any) {
+        console.error("Erro na API de diagnóstico:", error);
+        return res.status(500).json({
+            error: "Erro na geração do plano",
+            message: error.message || "Ocorreu um erro inesperado."
+        });
     }
 }

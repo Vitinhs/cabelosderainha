@@ -11,47 +11,96 @@ interface ResultViewProps {
 
 const ResultView: React.FC<ResultViewProps> = ({ diagnosisText, initialPlan, onSubscribe }) => {
 
+    const stripEmojis = (str: string) => {
+        return str.replace(/[\u1F600-\u1F64F\u1F300-\u1F5FF\u1F680-\u1F6FF\u1F1E0-\u1F1FF\u2600-\u26FF\u2700-\u27BF]/g, '');
+    };
+
     const handleDownloadPDF = () => {
+        if (!diagnosisText || diagnosisText === "Analisando seus fios...") {
+            alert("Aguarde o diagnóstico carregar completamente antes de baixar.");
+            return;
+        }
+
+        const cleanDiagnosis = stripEmojis(diagnosisText);
+        const cleanPlan = initialPlan.map(stripEmojis);
+
         const doc = new jsPDF();
         const margin = 20;
-        let y = 20;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const contentWidth = pageWidth - (margin * 2);
+        let y = 25;
 
-        // Header
+        const checkPageBreak = (needed: number) => {
+            if (y + needed > pageHeight - 20) {
+                doc.addPage();
+                y = 20;
+                return true;
+            }
+            return false;
+        };
+
+        // Header Style
+        doc.setFillColor(45, 74, 34); // #2d4a22
+        doc.rect(0, 0, pageWidth, 40, 'F');
+
         doc.setFontSize(22);
-        doc.setTextColor(45, 74, 34); // #2d4a22
-        doc.text("Cronograma Capilar de Rainha", margin, y);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text("Cronograma Capilar Real", margin, 27);
+        y = 55;
+
+        // Diagnosis Section
+        doc.setFontSize(16);
+        doc.setTextColor(45, 74, 34);
+        doc.setFont("helvetica", "bold");
+        doc.text("Seu Diagnóstico Personalizado", margin, y);
+        y += 12;
+
+        doc.setFontSize(11);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont("helvetica", "normal");
+
+        // Split diagnosis and handle multi-page
+        const splitDiagnosis = doc.splitTextToSize(cleanDiagnosis, contentWidth);
+        splitDiagnosis.forEach((line: string) => {
+            checkPageBreak(7);
+            doc.text(line, margin, y);
+            y += 7;
+        });
         y += 15;
 
-        // Diagnosis
-        doc.setFontSize(14);
-        doc.setTextColor(33, 33, 33);
-        doc.text("Seu Diagnóstico:", margin, y);
-        y += 10;
-
-        doc.setFontSize(11);
-        const splitDiagnosis = doc.splitTextToSize(diagnosisText, 170);
-        doc.text(splitDiagnosis, margin, y);
-        y += (splitDiagnosis.length * 7) + 10;
-
-        // Plan
-        doc.setFontSize(14);
+        // Task Plan Section
+        checkPageBreak(30);
+        doc.setFontSize(16);
         doc.setTextColor(45, 74, 34);
-        doc.text("Suas Primeiras Tarefas:", margin, y);
-        y += 10;
+        doc.setFont("helvetica", "bold");
+        doc.text("Seu Plano de Ação", margin, y);
+        y += 12;
 
         doc.setFontSize(11);
         doc.setTextColor(33, 33, 33);
-        initialPlan.forEach((task, index) => {
-            doc.text(`${index + 1}. ${task}`, margin + 5, y);
-            y += 8;
+        doc.setFont("helvetica", "normal");
+
+        cleanPlan.forEach((task, index) => {
+            checkPageBreak(10);
+            doc.setFillColor(245, 245, 245);
+            doc.rect(margin - 2, y - 5, contentWidth + 4, 8, 'F');
+            doc.text(`${index + 1}. ${task}`, margin, y);
+            y += 10;
         });
 
-        y += 15;
-        doc.setFontSize(10);
-        doc.setTextColor(150, 150, 150);
-        doc.text("Gerado por Capillaire AI - Sua beleza natural.", margin, y);
+        // Footer
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Capillaire AI - Gerado em ${new Date().toLocaleDateString('pt-BR')}`, margin, pageHeight - 10);
+            doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
+        }
 
-        doc.save("meu-cronograma-capilar.pdf");
+        doc.save("meu-cronograma-capilar-rainha.pdf");
     };
 
     return (
