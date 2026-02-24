@@ -48,7 +48,7 @@ const App: React.FC = () => {
         setPhase('app');
         loadUserPlan(session.user.id);
         checkSubscription(session.user.id);
-        syncClientId(session.user.email);
+        syncClientId(session.user.email, session.user.id);
       } else {
         setIsAuthLoading(false);
       }
@@ -65,7 +65,7 @@ const App: React.FC = () => {
         setPhase('app');
         loadUserPlan(session.user.id);
         checkSubscription(session.user.id);
-        syncClientId(session.user.email);
+        syncClientId(session.user.email, session.user.id);
       } else {
         setHairPlan(null);
         setIsSubscriber(false);
@@ -79,30 +79,33 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const syncClientId = async (email: string | undefined) => {
+  const syncClientId = async (email: string | undefined, userId?: string) => {
     if (!email) return;
     console.log("Syncing client data for email:", email);
-    const { data } = await supabase.from('clientes').select('id, respostas_quiz').eq('email', email).maybeSingle();
+    const { data } = await supabase.from('clientes').select('id, respostas_quiz, user_id').eq('email', email).maybeSingle();
 
     if (data) {
       console.log("Client found in 'clientes' table:", data.id);
+
+      // Vincular user_id se ainda não estiver vinculado
+      if (!data.user_id && userId) {
+        console.log("Linking user_id to client record...");
+        await supabase.from('clientes').update({ user_id: userId }).eq('id', data.id);
+      }
+
       setDiagnosisData(prev => {
         const base = prev || { answers: {}, lead: {}, clientId: data.id };
         return { ...base, clientId: data.id, answers: data.respostas_quiz || base.answers };
       });
-
-      // Se não temos plano carregado, mas temos respostas, podemos tentar gerar/carregar
-      if (!hairPlan && data.respostas_quiz && Object.keys(data.respostas_quiz).length > 0) {
-        console.log("User has saved quiz answers but no plan in state. Phase is:", phase);
-      }
     }
   };
 
   const checkSubscription = async (userId: string) => {
+    // Buscar assinaturas vinculadas ao cliente que pertence a este usuário
     const { data } = await supabase
       .from('assinaturas')
-      .select('status')
-      .eq('cliente_id', userId)
+      .select('status, clientes!inner(user_id)')
+      .eq('clientes.user_id', userId)
       .eq('status', 'ativa')
       .maybeSingle();
 
@@ -294,6 +297,7 @@ const App: React.FC = () => {
           <motion.div key="subscription" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
             <SubscriptionView
               userId={session?.user?.id}
+              clientId={diagnosisData?.clientId}
               onSuccess={() => { setPhase('app'); setActiveTab('dashboard'); }}
               onCancel={() => setPhase('app')}
             />

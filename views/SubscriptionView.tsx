@@ -7,25 +7,44 @@ interface SubscriptionViewProps {
     onSuccess: () => void;
     onCancel: () => void;
     userId?: string;
+    clientId?: string | null;
 }
 
-const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSuccess, onCancel, userId }) => {
+const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSuccess, onCancel, userId, clientId }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubscribe = async () => {
         if (!userId) {
-            // Se não estiver logado, apenas prossegue (provavelmente será redirecionado para auth)
             onSuccess();
             return;
         }
 
         setIsLoading(true);
         try {
+            let targetClientId = clientId;
+
+            // Fallback: se não temos o clientId, buscamos pelo email do usuário logado
+            if (!targetClientId) {
+                const { data: userData } = await supabase.auth.getUser();
+                if (userData.user?.email) {
+                    const { data: clientData } = await supabase
+                        .from('clientes')
+                        .select('id')
+                        .eq('email', userData.user.email)
+                        .maybeSingle();
+                    targetClientId = clientData?.id;
+                }
+            }
+
+            if (!targetClientId) {
+                throw new Error("Não foi possível localizar o seu registro de cliente. Tente refazer o diagnóstico.");
+            }
+
             // 1. Criar registro na tabela assinaturas
             const { error: subError } = await supabase
                 .from('assinaturas')
                 .insert([{
-                    cliente_id: userId,
+                    cliente_id: targetClientId,
                     status: 'ativa',
                     data_inicio: new Date().toISOString()
                 }]);
@@ -36,7 +55,7 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSuccess, onCancel
             const { error: clientError } = await supabase
                 .from('clientes')
                 .update({ assinatura_status: 'premium' })
-                .eq('id', userId);
+                .eq('id', targetClientId);
 
             if (clientError) console.warn("Erro ao atualizar status do cliente:", clientError);
 

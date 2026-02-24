@@ -44,14 +44,14 @@ const EvolutionGallery: React.FC<EvolutionGalleryProps> = ({ userId }) => {
 
             // 1. Upload to Supabase Storage
             const { error: uploadError } = await supabase.storage
-                .from('evolution')
+                .from('evolucoes')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
             // 2. Get Public URL
             const { data: { publicUrl } } = supabase.storage
-                .from('evolution')
+                .from('evolucoes')
                 .getPublicUrl(filePath);
 
             // 3. Save to progress_photos table
