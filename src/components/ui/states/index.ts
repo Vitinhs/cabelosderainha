@@ -3,6 +3,6 @@
  * Importe de: import { LoadingState, EmptyState, ErrorState } from '@/src/components/ui/states'
  */
 
-export { LoadingState } from './LoadingState';
-export { EmptyState } from './EmptyState';
-export { ErrorState } from './ErrorState';
+export { LoadingState } from './loading-state';
+export { EmptyState } from './empty-state';
+export { ErrorState } from './error-state';
