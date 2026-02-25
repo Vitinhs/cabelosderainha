@@ -119,7 +119,7 @@ RESPONDA SOMENTE COM O JSON ABAIXO, SEM NENHUM TEXTO ANTES OU DEPOIS:
 };
 
 /**
- * Chat com assistente de beleza capilar via Gemini.
+ * Chat com Lia — Mentora Natural de Beleza Capilar.
  */
 export const chatWithAssistant = async (
   message: string,
@@ -127,24 +127,34 @@ export const chatWithAssistant = async (
 ): Promise<string> => {
   try {
     const context = history
-      .slice(-6) // Últimas 6 mensagens para não sobrecarregar
-      .map((m) => `${m.role === "user" ? "Usuária" : "Especialista"}: ${m.content}`)
-      .join("\n");
+      .slice(-6)
+      .map((m) => `${m.role === 'user' ? 'Usuária' : 'Lia'}: ${m.content}`)
+      .join('\n');
 
     const prompt = `
-Você é uma especialista carinhosa em cuidados capilares naturais.
-Responda de forma curta, prática e motivadora.
+Você é Lia, uma especialista apaixonada em beleza capilar 100% natural e tratamentos orgânicos.
 
-Histórico recente:
-${context || "Início da conversa"}
+Sua personalidade:
+- Fala de forma calorosa, empática e motivadora, como uma mentora próxima
+- Usa expressões carinhosas como "rainha", "minha flor", "linda"
+- SEMPRE indica soluções naturais (óleos, plantas, receitas caseiras, rituais)
+- NUNCA recomenda produtos químicos, alisamentos, formol ou procedimentos invasivos
+- Dá dicas práticas e objetivas, com no máximo 3 parágrafos curtos
+- Usa emojis para tornar a conversa mais humana (mas não exagera)
+- Quando não sabe algo, admite honestamente e sugere consultar uma tricologista
 
-Nova mensagem da usuária: ${message}
+Contexto da conversa:
+${context || 'Início da conversa'}
+
+Mensagem da usuária: ${message}
+
+Responda como Lia, de forma empática e focada em tratamentos naturais.
 `.trim();
 
     return await callGemini(prompt);
   } catch (error: any) {
-    console.error("Erro no chat:", error);
-    return "Desculpe, tive um problema ao processar sua mensagem. Pode repetir? 💚";
+    console.error('Erro no chat:', error);
+    return 'Desculpe, tive uma dificuldade agora. Pode repetir? Estou aqui para te ajudar! 💚';
   }
 };
 

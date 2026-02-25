@@ -14,6 +14,7 @@ import ResultView from '@/views/ResultView';
 import SubscriptionView from '@/views/SubscriptionView';
 import DashboardView from '@/views/DashboardView';
 import ProfileView from '@/views/ProfileView';
+import RecipesView from '@/views/RecipesView';
 import { useTheme } from '@/hooks/useTheme';
 
 import { supabase } from '@/services/supabaseClient';
@@ -359,6 +360,11 @@ const App: React.FC = () => {
                         <ChatView />
                       </PlanGuard>
                     </PrivateRoute>
+                  </motion.div>
+                )}
+                {activeTab === 'recipes' && (
+                  <motion.div key="recipes" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <RecipesView />
                   </motion.div>
                 )}
                 {activeTab === 'profile' && (
