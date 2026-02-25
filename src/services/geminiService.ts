@@ -51,69 +51,94 @@ async function callGemini(prompt: string): Promise<string> {
 }
 
 /**
+ * Remove artefatos comuns que o Gemini adiciona ao JSON:
+ *  - Blocos de código markdown (```json ... ```)
+ *  - Comentários de linha   // ...
+ *  - Comentários de bloco   /* ... *\/
+ *  - Vírgulas finais antes de } ou ]   (trailing commas)
+ */
+function sanitizeJson(raw: string): string {
+  // 1. Remove bloco markdown se houver (```json ... ```)
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  let s = fenceMatch ? fenceMatch[1] : raw;
+
+  // 2. Pega só de { até o último }
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
+
+  // 3. Remove comentários de linha  //...
+  s = s.replace(/\/\/[^\n]*/g, '');
+
+  // 4. Remove comentários de bloco  /* ... */
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // 5. Remove vírgulas finais antes de } ou ] (trailing commas)
+  s = s.replace(/,\s*([\]}])/g, '$1');
+
+  return s.trim();
+}
+
+/**
  * Gera o plano capilar completo de 30 dias chamando o Gemini diretamente.
  */
 export const generateHairPlan = async (diagnosis: any): Promise<any> => {
   const prompt = `
-Você é uma especialista tricologista (especialista em saúde capilar).
-Com base nos dados abaixo, crie um diagnóstico e um cronograma capilar personalizado de 4 semanas.
+Você é uma especialista tricologista em tratamentos naturais capilares.
+Crie um cronograma de 4 semanas personalizado com base nos dados abaixo.
 
 Dados:
 - Tipo de cabelo: ${diagnosis.hairType}
-- Problemas: ${(diagnosis.problems || [diagnosis.mainGoal]).join(", ")}
-- Objetivos: ${(diagnosis.goals || [diagnosis.mainGoal]).join(", ")}
-- Rotina atual: ${diagnosis.currentRoutine || "Não informada"}
+- Problemas: ${(diagnosis.problems || [diagnosis.mainGoal]).join(', ')}
+- Objetivos: ${(diagnosis.goals || [diagnosis.mainGoal]).join(', ')}
+- Rotina atual: ${diagnosis.currentRoutine || 'Não informada'}
 
-RESPONDA SOMENTE COM O JSON ABAIXO, SEM NENHUM TEXTO ANTES OU DEPOIS:
-{
-  "diagnosis": "Diagnóstico detalhado aqui...",
-  "schedule": [
-    { "week": 1, "steps": ["Hidratação", "Nutrição", "Hidratação"] },
-    { "week": 2, "steps": ["Hidratação", "Nutrição", "Reconstrução"] },
-    { "week": 3, "steps": ["Hidratação", "Hidratação", "Nutrição"] },
-    { "week": 4, "steps": ["Hidratação", "Nutrição", "Hidratação"] }
-  ],
-  "expressTips": ["Dica 1", "Dica 2", "Dica 3", "Dica 4", "Dica 5"],
-  "philosophy": "Frase motivacional personalizada aqui..."
-}
+REGRAS OBRIGATÓRIAS:
+1. Responda SOMENTE com JSON puro. Sem markdown, sem blocos de código, sem comentários.
+2. Não adicione // nem /* */ em lugar nenhum.
+3. Use EXATAMENTE esta estrutura, sem adicionar campos extras:
+
+{"diagnosis":"texto aqui","schedule":[{"week":1,"steps":["Hidratação","Nutrição","Hidratação"]},{"week":2,"steps":["Hidratação","Nutrição","Reconstrução"]},{"week":3,"steps":["Hidratação","Hidratação","Nutrição"]},{"week":4,"steps":["Hidratação","Nutrição","Hidratação"]}],"expressTips":["dica1","dica2","dica3","dica4","dica5"],"philosophy":"frase aqui"}
 `.trim();
 
   try {
-    console.log("🔬 Chamando Gemini diretamente do browser...");
+    console.log('🔬 Chamando Gemini...');
     const responseText = await callGemini(prompt);
 
-    // Extrai somente o bloco JSON, ignorando texto extra que a IA possa gerar
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error(
-        "A IA não retornou um JSON válido. Tente novamente."
-      );
+    // Sanitiza antes de parsear
+    const cleaned = sanitizeJson(responseText);
+    console.log('🧹 JSON sanitizado, iniciando parse...');
+
+    let data: any;
+    try {
+      data = JSON.parse(cleaned);
+    } catch (parseErr: any) {
+      console.error('❌ JSON ainda inválido após sanitização:', cleaned.slice(0, 300));
+      throw new Error(`Resposta da IA com formato inválido. Tente novamente. (${parseErr.message})`);
     }
 
-    const data = JSON.parse(jsonMatch[0]);
-    console.log("✅ Plano gerado com sucesso!");
-
+    console.log('✅ Plano gerado com sucesso!');
     const generateId = () => Math.random().toString(36).substring(2, 15);
 
     return {
       id: generateId(),
       createdAt: new Date().toISOString(),
       diagnosis,
-      summary: data.diagnosis || "Seu plano está pronto!",
+      summary: data.diagnosis || 'Seu Ritual Natural está pronto!',
       expressTips: data.expressTips || [],
-      philosophy: data.philosophy || "",
+      philosophy: data.philosophy || '',
       tasks: (data.schedule || []).flatMap((week: any) =>
         (week.steps || []).map((step: string, idx: number) => ({
           day: (week.week - 1) * 7 + (idx + 1),
           title: step,
           category: step as any,
-          description: `Ritual de ${step} — semana ${week.week} do seu cronograma personalizado.`,
+          description: `Ritual de ${step} — semana ${week.week} do seu Ritual Natural.`,
           completed: false,
         }))
       ),
     };
   } catch (error: any) {
-    console.error("❌ Erro ao gerar plano via Gemini:", error);
+    console.error('❌ Erro ao gerar plano via Gemini:', error);
     throw error;
   }
 };
