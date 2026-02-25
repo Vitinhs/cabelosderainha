@@ -110,15 +110,31 @@ const App: React.FC = () => {
   };
 
   const checkSubscription = async (userId: string) => {
-    // Buscar assinaturas vinculadas ao cliente que pertence a este usuário
-    const { data } = await supabase
-      .from('assinaturas')
-      .select('status, clientes!inner(user_id)')
-      .eq('clientes.user_id', userId)
-      .eq('status', 'ativa')
-      .maybeSingle();
+    try {
+      // Passo 1: buscar o cliente pelo user_id
+      const { data: cliente } = await supabase
+        .from('clientes')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    setIsSubscriber(!!data);
+      if (!cliente) {
+        setIsSubscriber(false);
+        return;
+      }
+
+      // Passo 2: verificar se existe assinatura ativa para esse cliente
+      const { data: assinatura } = await supabase
+        .from('assinaturas')
+        .select('id')
+        .eq('cliente_id', cliente.id)
+        .eq('status', 'ativa')
+        .maybeSingle();
+
+      setIsSubscriber(!!assinatura);
+    } catch {
+      setIsSubscriber(false);
+    }
   };
 
   const loadUserPlan = async (userId: string) => {
