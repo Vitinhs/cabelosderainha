@@ -116,29 +116,52 @@
 
 /* ============================================================
    2. DARK MODE TOKENS
-   Sobreescrevendo apenas o necessário para dark mode.
+   Fundos neutros escuros (carvão) + verde vibrante como acento.
    Ative com: <html data-theme="dark">
    ============================================================ */
 [data-theme="dark"] {
-    --color-surface-bg: #0f1a0c;
-    --color-surface-card: #1a2d15;
-    --color-surface-overlay: rgba(26, 45, 21, 0.90);
-    --color-surface-subtle: #152410;
-    --color-surface-brand: #1d3015;
+    /* ── Fundos: carvão neutro, não verde ── */
+    --color-surface-bg:      #111114;
+    --color-surface-card:    #1c1c20;
+    --color-surface-overlay: rgba(28, 28, 32, 0.92);
+    --color-surface-subtle:  #242428;
+    --color-surface-brand:   #1a2e16;
 
-    --color-text-primary: #f5f5f3;
-    --color-text-secondary: #b0b8aa;
-    --color-text-muted: #6b7a63;
-    --color-text-brand: #86c065;
+    /* ── Texto: branco suave ── */
+    --color-text-primary:    #f2f2f0;
+    --color-text-secondary:  #a8a8a6;
+    --color-text-muted:      #666664;
+    --color-text-brand:      #7ecb52;
+    --color-text-accent:     #d4a373;
 
-    --color-border-default: #2a3d24;
-    --color-border-subtle: #1e2e18;
-    --color-border-strong: #3d5a34;
+    /* ── Ações: verde vibrante mantido ── */
+    --color-action-primary:       #4a8c2a;
+    --color-action-primaryHover:  #3d7522;
+    --color-action-primaryActive: #31601b;
+    --color-action-secondary:     #1c1c20;
+    --color-action-strong:        #f2f2f0;
 
-    --color-action-secondary: #1a2d15;
+    /* ── Bordas: cinza escuro neutro ── */
+    --color-border-default: #333336;
+    --color-border-subtle:  #222225;
+    --color-border-strong:  #4a4a4e;
+    --color-border-brand:   #4a8c2a;
+    --color-border-focus:   #7ecb52;
 
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.30), 0 0 1px rgba(0, 0, 0, 0.20);
-    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.40);
+    /* ── Status ── */
+    --color-status-success-bg:   #0d2b12;
+    --color-status-success-text: #4ade80;
+    --color-status-error-bg:     #2b0d0d;
+    --color-status-error-text:   #f87171;
+    --color-status-warn-bg:      #2b1f0d;
+    --color-status-warn-text:    #fbbf24;
+    --color-status-info-bg:      #0d1a2b;
+    --color-status-info-text:    #60a5fa;
+
+    /* ── Sombras ── */
+    --shadow-card:            0 2px 8px rgba(0,0,0,0.50), 0 0 1px rgba(0,0,0,0.35);
+    --shadow-card-hover:      0 8px 24px rgba(0,0,0,0.60);
+    --shadow-button-primary:  0 4px 14px rgba(74, 140, 42, 0.40);
 }
 
 /* ============================================================
