@@ -76,14 +76,22 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           </h1>
           <p className="text-label" style={{ marginTop: '2px' }}>Cronograma Capilar Inteligente</p>
         </div>
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ background: 'var(--color-surface-brand)', color: 'var(--color-text-brand)' }}
+        <button
+          onClick={() => setActiveTab('profile')}
+          aria-label="Ir para perfil"
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
+          style={{
+            background: activeTab === 'profile' ? 'var(--color-action-primary)' : 'var(--color-surface-brand)',
+            color: activeTab === 'profile' ? 'white' : 'var(--color-text-brand)',
+            border: activeTab === 'profile' ? 'none' : '1px solid var(--color-border-brand)',
+            cursor: 'pointer',
+            boxShadow: activeTab === 'profile' ? 'var(--shadow-card)' : 'none',
+          }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-        </div>
+        </button>
       </header>
 
       {/* Main Content */}
