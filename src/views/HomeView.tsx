@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HairPlan } from '@/types';
 import { fastHairTip } from '@/services/geminiService';
 import { Button, Badge } from '@/components/ui';
+import ScrollableRow from '@/components/ScrollableRow';
 
 interface HomeViewProps {
   hairPlan: HairPlan | null;
@@ -163,7 +164,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
           Precisa de uma solução rápida? Escolha um tema:
         </p>
 
-        <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar -mx-1 px-1">
+        <ScrollableRow className="gap-2">
           {QUICK_PROBLEMS.map((p) => {
             const isSelected = selectedProblem === p.label;
             return (
@@ -185,7 +186,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
               </Button>
             );
           })}
-        </div>
+        </ScrollableRow>
 
         <AnimatePresence>
           {(isLoadingTip || quickTip) && (
@@ -261,7 +262,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
       {/* ── Ingredientes Estrela ── */}
       <section className="space-y-3 pb-4">
         <h3 className="text-card-title">Ingredientes Estrela</h3>
-        <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar -mx-1 px-1">
+        <ScrollableRow className="gap-3">
           {INGREDIENTS.map((ing, i) => (
             <div
               key={i}
@@ -275,7 +276,7 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
               <p className="text-label mt-0.5">{ing.desc}</p>
             </div>
           ))}
-        </div>
+        </ScrollableRow>
       </section>
     </div>
   );
