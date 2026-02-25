@@ -84,8 +84,8 @@ async function callGeminiJson(prompt: string): Promise<any> {
     throw new Error("Chave de API (VITE_GEMINI_API_KEY) não encontrada.");
   }
 
-  // gemini-1.5-flash tem JSON mode (responseMimeType + responseSchema) mais estável
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // gemini-2.0-flash: estável no v1beta, suporta responseMimeType + responseSchema
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
