@@ -4,6 +4,9 @@ import { HairDiagnosis } from "../types";
 // Chave pública do Gemini (variável Vite - exposta no cliente)
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
+// Histórico de dicas por problema — garante que nenhuma dica se repita na sessão
+const tipHistory = new Map<string, string[]>();
+
 /**
  * Chama o Gemini 1.5 Flash diretamente do browser.
  * Funciona tanto em localhost quanto em produção (Vercel).
@@ -146,15 +149,26 @@ Nova mensagem da usuária: ${message}
 };
 
 /**
- * Dica rápida de cabelo (mantida por compatibilidade).
+ * Dica rápida de cabelo — nunca repete uma dica já mostrada na sessão.
  */
 export const fastHairTip = async (
   problem: string,
   diagnosis?: HairDiagnosis
 ): Promise<string> => {
   try {
-    const prompt = `Dê UMA dica prática e curta (máximo 2 frases) para o seguinte problema capilar: ${problem}. Tipo de cabelo: ${diagnosis?.hairType || "não informado"}.`;
-    return await callGemini(prompt);
+    const seen = tipHistory.get(problem) ?? [];
+    const seenBlock = seen.length > 0
+      ? `\n\nDicas que você JÁ deu antes e NÃO podem ser repetidas:\n${seen.map((t, i) => `${i + 1}. "${t}"`).join('\n')}`
+      : '';
+
+    const prompt = `Dê UMA dica prática e curta (máximo 2 frases) para o seguinte problema capilar: ${problem}. Tipo de cabelo: ${diagnosis?.hairType || 'não informado'}.${seenBlock}\n\nResponda APENAS com a nova dica, sem numeração nem aspas.`;
+
+    const tip = await callGemini(prompt);
+
+    // Salva no histórico para evitar repetição
+    tipHistory.set(problem, [...seen, tip]);
+
+    return tip;
   } catch (error: any) {
     console.error("Erro ao buscar dica rápida:", error);
     return "Use óleo de coco para selar as cutículas e dar brilho. 💚";

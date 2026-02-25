@@ -107,8 +107,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, isDa
 
           {/* Profile */}
           <button
-            onClick={() => setActiveTab('profile')}
-            aria-label="Ir para perfil"
+            onClick={() => setActiveTab(activeTab === 'profile' ? 'home' : 'profile')}
+            aria-label={activeTab === 'profile' ? 'Fechar perfil' : 'Ir para perfil'}
             className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
             style={{
               background: activeTab === 'profile' ? 'var(--color-action-primary)' : 'var(--color-surface-brand)',
