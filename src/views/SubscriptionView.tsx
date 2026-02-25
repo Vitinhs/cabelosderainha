@@ -38,10 +38,22 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onSuccess, onCancel
 
             if (!targetClientId) {
                 const { data: userData } = await supabase.auth.getUser();
-                if (userData.user?.email) {
-                    const { data: clientData } = await supabase
-                        .from('clientes').select('id').eq('email', userData.user.email).maybeSingle();
-                    targetClientId = clientData?.id;
+                const currentUser = userData.user;
+
+                if (currentUser) {
+                    // Tenta primeiro por user_id (mais confiável)
+                    const { data: byUserId } = await supabase
+                        .from('clientes').select('id')
+                        .eq('user_id', currentUser.id).maybeSingle();
+                    targetClientId = byUserId?.id;
+
+                    // Fallback: tenta pelo email
+                    if (!targetClientId && currentUser.email) {
+                        const { data: byEmail } = await supabase
+                            .from('clientes').select('id')
+                            .eq('email', currentUser.email).maybeSingle();
+                        targetClientId = byEmail?.id;
+                    }
                 }
             }
 
