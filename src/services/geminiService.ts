@@ -51,6 +51,45 @@ async function callGemini(prompt: string): Promise<string> {
 }
 
 /**
+ * Chama o Gemini forçando saída em JSON válido via responseMimeType.
+ * Elimina qualquer risco de markdown, comentários ou texto extra no JSON.
+ */
+async function callGeminiJson(prompt: string): Promise<any> {
+  if (!GEMINI_API_KEY) {
+    throw new Error("Chave de API (VITE_GEMINI_API_KEY) não encontrada.");
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+        responseMimeType: "application/json",   // ← força JSON puro, sem markdown
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData?.error?.message || `Gemini API retornou status ${response.status}`
+    );
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) throw new Error("A IA retornou uma resposta vazia. Tente novamente.");
+
+  return JSON.parse(text);
+}
+
+/**
  * Remove artefatos comuns que o Gemini adiciona ao JSON:
  *  - Blocos de código markdown (```json ... ```)
  *  - Comentários de linha   // ...
@@ -80,7 +119,8 @@ function sanitizeJson(raw: string): string {
 }
 
 /**
- * Gera o plano capilar completo de 30 dias chamando o Gemini diretamente.
+ * Gera o plano capilar completo de 30 dias.
+ * Usa callGeminiJson para garantir JSON 100% válido da API.
  */
 export const generateHairPlan = async (diagnosis: any): Promise<any> => {
   const prompt = `
@@ -93,31 +133,19 @@ Dados:
 - Objetivos: ${(diagnosis.goals || [diagnosis.mainGoal]).join(', ')}
 - Rotina atual: ${diagnosis.currentRoutine || 'Não informada'}
 
-REGRAS OBRIGATÓRIAS:
-1. Responda SOMENTE com JSON puro. Sem markdown, sem blocos de código, sem comentários.
-2. Não adicione // nem /* */ em lugar nenhum.
-3. Use EXATAMENTE esta estrutura, sem adicionar campos extras:
-
-{"diagnosis":"texto aqui","schedule":[{"week":1,"steps":["Hidratação","Nutrição","Hidratação"]},{"week":2,"steps":["Hidratação","Nutrição","Reconstrução"]},{"week":3,"steps":["Hidratação","Hidratação","Nutrição"]},{"week":4,"steps":["Hidratação","Nutrição","Hidratação"]}],"expressTips":["dica1","dica2","dica3","dica4","dica5"],"philosophy":"frase aqui"}
+Retorne um objeto JSON com EXATAMENTE estes campos:
+- diagnosis: string com diagnóstico personalizado (2-3 frases)
+- schedule: array de 4 objetos {week: number, steps: string[]} onde steps tem 3 itens cada (valores: "Hidratação", "Nutrição", "Reconstrução", "Detox" ou "Descanso")
+- expressTips: array de exatamente 5 strings com dicas práticas naturais
+- philosophy: string com uma frase motivacional personalizada
 `.trim();
 
   try {
-    console.log('🔬 Chamando Gemini...');
-    const responseText = await callGemini(prompt);
-
-    // Sanitiza antes de parsear
-    const cleaned = sanitizeJson(responseText);
-    console.log('🧹 JSON sanitizado, iniciando parse...');
-
-    let data: any;
-    try {
-      data = JSON.parse(cleaned);
-    } catch (parseErr: any) {
-      console.error('❌ JSON ainda inválido após sanitização:', cleaned.slice(0, 300));
-      throw new Error(`Resposta da IA com formato inválido. Tente novamente. (${parseErr.message})`);
-    }
-
+    console.log('🔬 Chamando Gemini com modo JSON nativo...');
+    // callGeminiJson usa responseMimeType: "application/json" — retorna JSON garantido
+    const data = await callGeminiJson(prompt);
     console.log('✅ Plano gerado com sucesso!');
+
     const generateId = () => Math.random().toString(36).substring(2, 15);
 
     return {
