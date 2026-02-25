@@ -5,6 +5,8 @@ interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isDark: boolean;
+  toggleTheme: () => void;
 }
 
 const NAV_ITEMS = [
@@ -56,7 +58,7 @@ const NAV_ITEMS = [
   },
 ];
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, isDark, toggleTheme }) => {
   return (
     <div
       className="min-h-screen flex flex-col max-w-md mx-auto shadow-xl relative overflow-hidden"
@@ -76,22 +78,51 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           </h1>
           <p className="text-label" style={{ marginTop: '2px' }}>Cronograma Capilar Inteligente</p>
         </div>
-        <button
-          onClick={() => setActiveTab('profile')}
-          aria-label="Ir para perfil"
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-          style={{
-            background: activeTab === 'profile' ? 'var(--color-action-primary)' : 'var(--color-surface-brand)',
-            color: activeTab === 'profile' ? 'white' : 'var(--color-text-brand)',
-            border: activeTab === 'profile' ? 'none' : '1px solid var(--color-border-brand)',
-            cursor: 'pointer',
-            boxShadow: activeTab === 'profile' ? 'var(--shadow-card)' : 'none',
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+            title={isDark ? 'Modo claro' : 'Modo escuro'}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              background: 'var(--color-surface-subtle)',
+              color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-border-default)',
+              cursor: 'pointer',
+            }}
+          >
+            {isDark ? (
+              /* Sol — modo claro */
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+              </svg>
+            ) : (
+              /* Lua — modo escuro */
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Profile */}
+          <button
+            onClick={() => setActiveTab('profile')}
+            aria-label="Ir para perfil"
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
+            style={{
+              background: activeTab === 'profile' ? 'var(--color-action-primary)' : 'var(--color-surface-brand)',
+              color: activeTab === 'profile' ? 'white' : 'var(--color-text-brand)',
+              border: activeTab === 'profile' ? 'none' : '1px solid var(--color-border-brand)',
+              cursor: 'pointer',
+              boxShadow: activeTab === 'profile' ? 'var(--shadow-card)' : 'none',
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}

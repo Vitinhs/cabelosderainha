@@ -14,6 +14,7 @@ import ResultView from '@/views/ResultView';
 import SubscriptionView from '@/views/SubscriptionView';
 import DashboardView from '@/views/DashboardView';
 import ProfileView from '@/views/ProfileView';
+import { useTheme } from '@/hooks/useTheme';
 
 import { supabase } from '@/services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -26,6 +27,7 @@ import { toast } from "sonner";
 type JourneyPhase = 'landing' | 'quiz' | 'result' | 'subscription' | 'app';
 
 const App: React.FC = () => {
+  const { isDark, toggleTheme } = useTheme();
   const [phase, setPhase] = useState<JourneyPhase>('landing');
   const [activeTab, setActiveTab] = useState<string>('home');
   const [hairPlan, setHairPlan] = useState<HairPlan | null>(null);
@@ -315,7 +317,7 @@ const App: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
           >
-            <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+            <Layout activeTab={activeTab} setActiveTab={setActiveTab} isDark={isDark} toggleTheme={toggleTheme}>
               <AnimatePresence mode="wait">
                 {activeTab === 'home' && (
                   <motion.div key="home" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.2 }}>
