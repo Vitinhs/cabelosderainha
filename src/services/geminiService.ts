@@ -51,15 +51,41 @@ async function callGemini(prompt: string): Promise<string> {
 }
 
 /**
- * Chama o Gemini forçando saída em JSON válido via responseMimeType.
- * Elimina qualquer risco de markdown, comentários ou texto extra no JSON.
+ * Schema do plano capilar — garante que o Gemini retorne
+ * exatamente os campos que precisamos, sem inventar outros.
+ */
+const HAIR_PLAN_SCHEMA = {
+  type: "object",
+  properties: {
+    diagnosis: { type: "string" },
+    schedule: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          week: { type: "number" },
+          steps: { type: "array", items: { type: "string" } },
+        },
+        required: ["week", "steps"],
+      },
+    },
+    expressTips: { type: "array", items: { type: "string" } },
+    philosophy: { type: "string" },
+  },
+  required: ["diagnosis", "schedule", "expressTips", "philosophy"],
+};
+
+/**
+ * Chama o Gemini forçando saída JSON estruturada via responseSchema + responseMimeType.
+ * Usa gemini-1.5-flash que tem suporte a JSON mode mais estável.
  */
 async function callGeminiJson(prompt: string): Promise<any> {
   if (!GEMINI_API_KEY) {
     throw new Error("Chave de API (VITE_GEMINI_API_KEY) não encontrada.");
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // gemini-1.5-flash tem JSON mode (responseMimeType + responseSchema) mais estável
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -69,7 +95,8 @@ async function callGeminiJson(prompt: string): Promise<any> {
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 2048,
-        responseMimeType: "application/json",   // ← força JSON puro, sem markdown
+        responseMimeType: "application/json",
+        responseSchema: HAIR_PLAN_SCHEMA,
       },
     }),
   });
@@ -86,6 +113,7 @@ async function callGeminiJson(prompt: string): Promise<any> {
 
   if (!text) throw new Error("A IA retornou uma resposta vazia. Tente novamente.");
 
+  // Com responseMimeType + responseSchema o texto já é JSON válido garantido pela API
   return JSON.parse(text);
 }
 
