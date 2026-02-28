@@ -16,33 +16,55 @@ interface DiagnosticRequest {
 /**
  * Função interna para chamar o Gemini com lógica de re-tentativa (resiliência).
  */
-async function callGeminiInternal(prompt: string, apiKey: string, retries = 3): Promise<string> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
+async function callAIInternal(prompt: string, providers: { openai?: string, gemini?: string }, retries = 3): Promise<string> {
+    const useOpenAI = !!(providers.openai && providers.openai !== "undefined" && providers.openai !== "null");
 
     for (let i = 0; i < retries; i++) {
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+            let response;
+            if (useOpenAI) {
+                console.log(`[Diagnostic] Usando OpenAI (Tentativa ${i + 1})...`);
+                response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${providers.openai}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.7
+                    })
+                });
+            } else {
+                console.log(`[Diagnostic] Usando Gemini (Tentativa ${i + 1})...`);
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${providers.gemini}`;
+                response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+            }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const isRetryable = response.status === 429 || response.status === 503;
 
                 if (isRetryable && i < retries - 1) {
-                    console.log(`[Diagnostic] Retry ${i + 1} for quota/server error...`);
                     await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
                     continue;
                 }
-                throw new Error(errorData?.error?.message || `Gemini API error: ${response.status}`);
+                throw new Error(errorData?.error?.message || `AI API error: ${response.status}`);
             }
 
             const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            if (useOpenAI) {
+                return data.choices?.[0]?.message?.content?.trim() || "";
+            } else {
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            }
         } catch (error: any) {
             if (i === retries - 1) throw error;
             await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
@@ -73,19 +95,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Dados incompletos para o diagnóstico" });
         }
 
-        const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-        const apiKey = rawKey?.trim();
+        const openaiKey = process.env.OPENAI_API_KEY?.trim();
+        const geminiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY)?.trim();
 
-        if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-            console.error("ERRO: GEMINI_API_KEY não encontrada ou inválida nas variáveis de ambiente.");
+        if (!openaiKey && !geminiKey) {
+            console.error("ERRO: Nenhuma chave de API (OpenAI ou Gemini) encontrada.");
             return res.status(500).json({
                 error: "Configuração ausente",
-                message: "A chave API (GEMINI_API_KEY) não foi configurada ou é inválida. Verifique as configurações do projeto."
+                message: "Nenhuma chave de API (OPENAI_API_KEY ou GEMINI_API_KEY) foi configurada."
             });
         }
 
-        const keySource = process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY';
-        console.log(`[API Diagnostic] Usando chave de ${keySource}: ${apiKey.substring(0, 10)}... (Comprimento: ${apiKey.length})`);
+        console.log(`[API Diagnostic] Provedores: OpenAI=${!!openaiKey}, Gemini=${!!geminiKey}`);
 
         const prompt = `
 Você é um especialista tricologista (especialista em saúde capilar).
@@ -111,8 +132,8 @@ RESPONDA APENAS EM JSON VÁLIDO (SEM TEXTO ANTES OU DEPOIS):
 }
 `.trim();
 
-        console.log("Chamando Gemini...");
-        const responseText = await callGeminiInternal(prompt, apiKey);
+        console.log("Chamando IA...");
+        const responseText = await callAIInternal(prompt, { openai: openaiKey, gemini: geminiKey });
 
         // Extrai JSON se houver lixo em volta
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
