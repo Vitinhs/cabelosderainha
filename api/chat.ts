@@ -14,37 +14,27 @@ interface ChatRequest {
 /**
  * Função interna para chamar o Gemini com lógica de re-tentativa (resiliência).
  */
-async function callAIInternal(prompt: string, providers: { openai?: string, gemini?: string }, retries = 3): Promise<string> {
-    const useOpenAI = !!(providers.openai && providers.openai !== "undefined" && providers.openai !== "null");
+async function callAIInternal(prompt: string, providers: { openai?: string }, retries = 3): Promise<string> {
+    const openaiKey = providers.openai;
+    if (!openaiKey) {
+        throw new Error("OPENAI_API_KEY is missing or undefined");
+    }
 
     for (let i = 0; i < retries; i++) {
         try {
-            let response;
-            if (useOpenAI) {
-                console.log(`[Chat] Usando OpenAI (Tentativa ${i + 1})...`);
-                response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${providers.openai}`
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4o-mini',
-                        messages: [{ role: 'user', content: prompt }],
-                        temperature: 0.7
-                    })
-                });
-            } else {
-                console.log(`[Chat] Usando Gemini (Tentativa ${i + 1})...`);
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${providers.gemini}`;
-                response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-            }
+            console.log(`[Chat] Usando OpenAI (Tentativa ${i + 1})...`);
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${openaiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7
+                })
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -54,15 +44,11 @@ async function callAIInternal(prompt: string, providers: { openai?: string, gemi
                     await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
                     continue;
                 }
-                throw new Error(errorData?.error?.message || `AI API error: ${response.status}`);
+                throw new Error(errorData?.error?.message || `OpenAI API error: ${response.status}`);
             }
 
             const data = await response.json();
-            if (useOpenAI) {
-                return data.choices?.[0]?.message?.content?.trim() || "";
-            } else {
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            }
+            return data.choices?.[0]?.message?.content?.trim() || "";
         } catch (error: any) {
             if (i === retries - 1) throw error;
             await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
@@ -93,18 +79,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Mensagem vazia" });
         }
 
-        const openaiKey = process.env.OPENAI_API_KEY?.trim();
-        const geminiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY)?.trim();
+        const openaiKey = (process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY)?.trim();
 
-        if (!openaiKey && !geminiKey) {
-            console.error("ERRO: Nenhuma chave de API (OpenAI ou Gemini) encontrada.");
+        if (!openaiKey) {
+            console.error("ERRO: Nenhuma chave de API da OpenAI encontrada.");
             return res.status(500).json({
                 error: "Configuração ausente",
-                message: "A chave API não configurada ou inválida no servidor."
+                message: "A chave API da OpenAI não está configurada ou é inválida no servidor."
             });
         }
 
-        console.log(`[API Chat] Provedores: OpenAI=${!!openaiKey}, Gemini=${!!geminiKey}`);
+        console.log(`[API Chat] Provedores: OpenAI=${!!openaiKey}`);
 
         const prompt = `
 Você é um especialista em cuidados capilares.
@@ -117,7 +102,7 @@ Responda em markdown, formatando bem o texto.
 `.trim();
 
         console.log("Chamando IA...");
-        const reply = await callAIInternal(prompt, { openai: openaiKey, gemini: geminiKey });
+        const reply = await callAIInternal(prompt, { openai: openaiKey });
         return res.status(200).json({ reply });
 
     } catch (error: any) {

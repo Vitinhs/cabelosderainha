@@ -16,37 +16,27 @@ interface DiagnosticRequest {
 /**
  * Função interna para chamar o Gemini com lógica de re-tentativa (resiliência).
  */
-async function callAIInternal(prompt: string, providers: { openai?: string, gemini?: string }, retries = 3): Promise<string> {
-    const useOpenAI = !!(providers.openai && providers.openai !== "undefined" && providers.openai !== "null");
+async function callAIInternal(prompt: string, providers: { openai?: string }, retries = 3): Promise<string> {
+    const openaiKey = providers.openai;
+    if (!openaiKey) {
+        throw new Error("OPENAI_API_KEY is missing or undefined");
+    }
 
     for (let i = 0; i < retries; i++) {
         try {
-            let response;
-            if (useOpenAI) {
-                console.log(`[Diagnostic] Usando OpenAI (Tentativa ${i + 1})...`);
-                response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${providers.openai}`
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4o-mini',
-                        messages: [{ role: 'user', content: prompt }],
-                        temperature: 0.7
-                    })
-                });
-            } else {
-                console.log(`[Diagnostic] Usando Gemini (Tentativa ${i + 1})...`);
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${providers.gemini}`;
-                response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-            }
+            console.log(`[Diagnostic] Usando OpenAI (Tentativa ${i + 1})...`);
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${openaiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.7
+                })
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -56,15 +46,11 @@ async function callAIInternal(prompt: string, providers: { openai?: string, gemi
                     await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
                     continue;
                 }
-                throw new Error(errorData?.error?.message || `AI API error: ${response.status}`);
+                throw new Error(errorData?.error?.message || `OpenAI API error: ${response.status}`);
             }
 
             const data = await response.json();
-            if (useOpenAI) {
-                return data.choices?.[0]?.message?.content?.trim() || "";
-            } else {
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            }
+            return data.choices?.[0]?.message?.content?.trim() || "";
         } catch (error: any) {
             if (i === retries - 1) throw error;
             await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
@@ -77,14 +63,15 @@ async function callAIInternal(prompt: string, providers: { openai?: string, gemi
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS configuration
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    if (req.method !== 'POST') {
+    // Temporarily allow GET for easier debugging of env vars
+    if (req.method !== 'POST' && req.method !== 'GET') {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
@@ -95,18 +82,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Dados incompletos para o diagnóstico" });
         }
 
-        const openaiKey = process.env.OPENAI_API_KEY?.trim();
-        const geminiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY)?.trim();
+        const openaiKey = (process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY)?.trim();
 
-        if (!openaiKey && !geminiKey) {
-            console.error("ERRO: Nenhuma chave de API (OpenAI ou Gemini) encontrada.");
+        if (!openaiKey) {
+            console.error("ERRO: Nenhuma chave de API da OpenAI encontrada.");
+            const availableKeys = Object.keys(process.env).filter(k =>
+                !k.includes('SESSION') && !k.includes('TOKEN') && !k.includes('AUTH')
+            );
             return res.status(500).json({
                 error: "Configuração ausente",
-                message: "Nenhuma chave de API (OPENAI_API_KEY ou GEMINI_API_KEY) foi configurada."
+                message: "A chave API da OpenAI não configurada ou inválida no servidor.",
+                debug: { availableKeys, nodeVersion: process.version }
             });
         }
 
-        console.log(`[API Diagnostic] Provedores: OpenAI=${!!openaiKey}, Gemini=${!!geminiKey}`);
+        console.log(`[API Diagnostic] Provedores: OpenAI=${!!openaiKey}`);
 
         const prompt = `
 Você é um especialista tricologista (especialista em saúde capilar).
@@ -133,7 +123,7 @@ RESPONDA APENAS EM JSON VÁLIDO (SEM TEXTO ANTES OU DEPOIS):
 `.trim();
 
         console.log("Chamando IA...");
-        const responseText = await callAIInternal(prompt, { openai: openaiKey, gemini: geminiKey });
+        const responseText = await callAIInternal(prompt, { openai: openaiKey });
 
         // Extrai JSON se houver lixo em volta
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
