@@ -64,13 +64,18 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
           style={{ background: 'var(--color-gold-400)' }} />
 
         <div className="relative z-10 space-y-4">
-          <div>
-            <h2 className="text-section-title" style={{ color: 'var(--color-text-onBrand)' }}>
-              Olá, Naturalista! 🌿
-            </h2>
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
-              Sua jornada para cabelos saudáveis começa aqui.
-            </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-section-title" style={{ color: 'var(--color-text-onBrand)' }}>
+                Olá, Naturalista! 🌿
+              </h2>
+              <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                Sua jornada para cabelos saudáveis começa aqui.
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center bg-white/10 backdrop-blur-sm shadow-inner">
+              <span className="text-xl">✨</span>
+            </div>
           </div>
 
           {!hairPlan ? (
@@ -145,6 +150,25 @@ const HomeView: React.FC<HomeViewProps> = ({ hairPlan, onStartDiagnosis }) => {
           </motion.section>
         )}
       </AnimatePresence>
+
+      {/* ── Nova: Análise Instantânea por Foto ── */}
+      <section className="relative overflow-hidden p-6 rounded-[2rem] shadow-premium group cursor-pointer"
+        style={{ background: 'var(--gradient-gold)' }}
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 blur-3xl rounded-full -mr-16 -mt-16 group-hover:scale-125 transition-transform duration-700" />
+        <div className="relative z-10 flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner border border-white/30">
+            📸
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-white leading-tight">Análise Capilar IA</h3>
+            <p className="text-xs text-white/80 mt-1">Tire uma foto e receba um diagnóstico técnico instantâneo.</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white text-[#a67c4e] flex items-center justify-center shadow-lg group-hover:translate-x-1 transition-transform">
+            →
+          </div>
+        </div>
+      </section>
 
       {/* ── Dica Express ── */}
       <section className="space-y-4">

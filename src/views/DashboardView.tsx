@@ -255,6 +255,33 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     {dailyPhrase}
                 </motion.div>
 
+                {/* ── Novo: Card de Análise Capilar IA ── */}
+                <motion.section
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative overflow-hidden p-5 rounded-[2rem] border border-white/20 shadow-premium group"
+                    style={{ background: 'var(--gradient-premium)' }}
+                >
+                    <div className="absolute -right-12 -top-12 w-40 h-40 bg-primary/20 blur-[60px] rounded-full group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="relative z-10 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-lg border border-white/10">
+                                🔬
+                            </div>
+                            <h3 className="text-white font-bold text-lg">Análise Avançada por Foto</h3>
+                        </div>
+                        <p className="text-white/70 text-xs leading-relaxed">
+                            Nossa IA analisa padrões de textura, brilho e porosidade através das suas fotos para ajustar seu cronograma em tempo real.
+                        </p>
+                        <Button
+                            className="bg-white text-primary border-none text-xs h-9 rounded-xl hover:bg-white/90"
+                            size="sm"
+                        >
+                            Analisar meus fios agora
+                        </Button>
+                    </div>
+                </motion.section>
+
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3">
                     <div className="p-4 rounded-2xl space-y-2" style={{ background: 'var(--color-surface-card)', border: '1px solid var(--color-border-subtle)' }}>

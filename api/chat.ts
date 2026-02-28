@@ -11,26 +11,46 @@ interface ChatRequest {
 /**
  * Função interna para chamar o Gemini sem dependências externas.
  */
-async function callGeminiInternal(prompt: string, apiKey: string): Promise<string> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+/**
+ * Função interna para chamar o Gemini com lógica de re-tentativa (resiliência).
+ */
+async function callGeminiInternal(prompt: string, apiKey: string, retries = 3): Promise<string> {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-        })
-    });
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Gemini API Error (Chat):", errorText);
-        throw new Error(`Gemini API error: ${response.status}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const isRetryable = response.status === 429 || response.status === 503;
+
+                if (isRetryable && i < retries - 1) {
+                    console.log(`[Retry ${i + 1}] Quota/Server error, backing off...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
+                    continue;
+                }
+
+                throw new Error(errorData?.error?.message || `Gemini API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        } catch (error: any) {
+            if (i === retries - 1) throw error;
+            console.log(`[Retry ${i + 1}] error: ${error.message}`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
+        }
     }
-
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return "";
 }
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS configuration

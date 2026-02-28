@@ -112,6 +112,12 @@
     --duration-fast: 150ms;
     --duration-normal: 200ms;
     --duration-slow: 300ms;
+
+    /* --- PREMIUM GRADIENTS --- */
+    --gradient-gold: linear-gradient(135deg, #d4a373 0%, #a67c4e 100%);
+    --gradient-nature: linear-gradient(135deg, #2d4a22 0%, #4a8c2a 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    --gradient-premium: linear-gradient(135deg, #2d4a22 0%, #1a1a1a 100%);
 }
 
 /* ============================================================
@@ -485,6 +491,15 @@
     /* --------- PREMIUM GLOW --------- */
     .glow-brand {
         box-shadow: 0 0 30px rgba(45, 74, 34, 0.2);
+    }
+
+    .glow-gold {
+        box-shadow: 0 0 30px rgba(212, 163, 115, 0.3);
+    }
+
+    /* --------- PREMIUM BLURS --------- */
+    .blur-premium {
+        @apply absolute rounded-full blur-[80px] opacity-20 pointer-events-none;
     }
 
     /* --------- TYPOGRAPHY HELPERS --------- */
