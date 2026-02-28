@@ -3,11 +3,16 @@
  */
 
 export async function callGemini(prompt: string): Promise<string> {
-    const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    const rawKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = rawKey?.trim();
 
-    if (!apiKey) {
-        throw new Error("GOOGLE_AI_API_KEY não configurada.");
+    if (!apiKey || apiKey === "undefined" || apiKey === "null") {
+        console.error("ERRO: GEMINI_API_KEY não encontrada ou inválida.");
+        throw new Error("GOOGLE_AI_API_KEY não configurada ou inválida.");
     }
+
+    const keySource = process.env.GOOGLE_AI_API_KEY ? 'GOOGLE_AI_API_KEY' : 'GEMINI_API_KEY';
+    console.log(`[callGemini] Usando chave de ${keySource}: ${apiKey.substring(0, 5)}...`);
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 

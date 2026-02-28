@@ -73,15 +73,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Dados incompletos para o diagnóstico" });
         }
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-        if (!apiKey) {
-            console.error("ERRO: GEMINI_API_KEY não encontrada nas variáveis de ambiente.");
+        const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+        const apiKey = rawKey?.trim();
+
+        if (!apiKey || apiKey === "undefined" || apiKey === "null") {
+            console.error("ERRO: GEMINI_API_KEY não encontrada ou inválida nas variáveis de ambiente.");
             return res.status(500).json({
                 error: "Configuração ausente",
-                message: "A chave API (GEMINI_API_KEY) não foi configurada no servidor Vercel. Adicione-a nas configurações do projeto."
+                message: "A chave API (GEMINI_API_KEY) não foi configurada ou é inválida. Verifique as configurações do projeto."
             });
         }
-        console.log(`[API Diagnostic] Usando chave: ${apiKey.substring(0, 10)}... (origem: ${process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY'})`);
+
+        const keySource = process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY';
+        console.log(`[API Diagnostic] Usando chave de ${keySource}: ${apiKey.substring(0, 10)}... (Comprimento: ${apiKey.length})`);
 
         const prompt = `
 Você é um especialista tricologista (especialista em saúde capilar).

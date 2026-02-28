@@ -73,14 +73,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Mensagem vazia" });
         }
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-        if (!apiKey) {
+        const rawKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+        const apiKey = rawKey?.trim();
+
+        if (!apiKey || apiKey === "undefined" || apiKey === "null") {
+            console.error("ERRO: GEMINI_API_KEY não encontrada ou inválida nas variáveis de ambiente.");
             return res.status(500).json({
                 error: "Configuração ausente",
-                message: "Chave API não configurada no servidor."
+                message: "A chave API não configurada ou inválida no servidor."
             });
         }
-        console.log(`[API Chat] Usando chave: ${apiKey.substring(0, 10)}... (origem: ${process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY'})`);
+
+        const keySource = process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY';
+        console.log(`[API Chat] Usando chave de ${keySource}: ${apiKey.substring(0, 10)}... (Comprimento: ${apiKey.length})`);
 
         const prompt = `
 Você é um especialista em cuidados capilares.
