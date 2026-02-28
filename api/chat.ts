@@ -15,7 +15,7 @@ interface ChatRequest {
  * Função interna para chamar o Gemini com lógica de re-tentativa (resiliência).
  */
 async function callGeminiInternal(prompt: string, apiKey: string, retries = 3): Promise<string> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 
     for (let i = 0; i < retries; i++) {
         try {
@@ -73,13 +73,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Mensagem vazia" });
         }
 
-        const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
         if (!apiKey) {
             return res.status(500).json({
                 error: "Configuração ausente",
                 message: "Chave API não configurada no servidor."
             });
         }
+        console.log(`[API Chat] Usando chave: ${apiKey.substring(0, 10)}... (origem: ${process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY'})`);
 
         const prompt = `
 Você é um especialista em cuidados capilares.

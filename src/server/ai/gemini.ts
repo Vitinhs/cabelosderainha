@@ -1,5 +1,5 @@
 /**
- * Motor de IA — Integração com Google Gemini 1.5 Flash.
+ * Motor de IA — Integração com Google Gemini 2.0 Flash Lite.
  */
 
 export async function callGemini(prompt: string): Promise<string> {
@@ -9,7 +9,7 @@ export async function callGemini(prompt: string): Promise<string> {
         throw new Error("GOOGLE_AI_API_KEY não configurada.");
     }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(endpoint, {

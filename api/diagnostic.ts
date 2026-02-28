@@ -17,7 +17,7 @@ interface DiagnosticRequest {
  * Função interna para chamar o Gemini com lógica de re-tentativa (resiliência).
  */
 async function callGeminiInternal(prompt: string, apiKey: string, retries = 3): Promise<string> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 
     for (let i = 0; i < retries; i++) {
         try {
@@ -73,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: "Dados incompletos para o diagnóstico" });
         }
 
-        const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
         if (!apiKey) {
             console.error("ERRO: GEMINI_API_KEY não encontrada nas variáveis de ambiente.");
             return res.status(500).json({
@@ -81,6 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 message: "A chave API (GEMINI_API_KEY) não foi configurada no servidor Vercel. Adicione-a nas configurações do projeto."
             });
         }
+        console.log(`[API Diagnostic] Usando chave: ${apiKey.substring(0, 10)}... (origem: ${process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY'})`);
 
         const prompt = `
 Você é um especialista tricologista (especialista em saúde capilar).

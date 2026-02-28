@@ -29,6 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!apiKey) {
             return res.status(500).json({ error: "Chave de API não configurada no servidor." });
         }
+        console.log(`[API Analyze] Usando chave: ${apiKey.substring(0, 10)}... (origem: ${process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_AI_API_KEY'})`);
 
         const prompt = `
 Você é um especialista em tricologia capilar. Analise esta foto de um cabelo e forneça um diagnóstico técnico curto (3-4 frases).
@@ -40,7 +41,7 @@ Foque em:
 Seja profissional, empático e encorajador. Responda em Português do Brasil.
 `.trim();
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
 
         let analysis = "";
         const retries = 3;
